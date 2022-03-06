@@ -7,7 +7,7 @@ To add this action to your repo create `.github/workflows/pull-request.yml` file
 ```
 on:
   workflow_dispatch:
-  push:
+  pull_request:
     branches:
       - master
       - 'master-legacy'
