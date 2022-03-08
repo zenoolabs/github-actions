@@ -5,6 +5,8 @@ Repository to store [reusable Github Actions](https://docs.github.com/en/actions
 Supposed to be run on pull-request to test if project will build.
 To add this action to your repo create `.github/workflows/pull-request.yml` file with following content:
 ```
+name: 'PR Build'
+
 on:
   workflow_dispatch:
   pull_request:
@@ -17,7 +19,8 @@ on:
       - '.github/**'
 
 jobs:
-  call-workflow-in-another-repo:
+  build:
+    name: 'Zenoo Build'
     uses: zenoolabs/github-actions/.github/workflows/pull-request.yml@v1
 ```
 
@@ -25,6 +28,8 @@ jobs:
 Supposed to be run on push to master branch to tag new version and upload it to Nexus.
 To add this action to your repo create `.github/workflows/release.yml` file with following content:
 ```
+name: Release
+
 on:
   workflow_dispatch:
   push:
@@ -37,6 +42,7 @@ on:
       - '.github/**'
 
 jobs:
-  call-workflow-in-another-repo:
+  release:
+    name: 'Zenoo Release'
     uses: zenoolabs/github-actions/.github/workflows/release.yml@v1
 ```
