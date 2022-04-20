@@ -36,11 +36,11 @@ jobs:
         run: chmod +x gradlew
       - name: 'Run build and tests'
         run: ./gradlew clean build --full-stacktrace
-      - name: Upload test results
+      - name: 'Upload test results'
         if: failure()
         uses: actions/upload-artifact@v1.0.0
         with:
           # Artifact name
           name: test_results
           # Directory containing files to upload
-          path: /home/runner/work/hub-component-report/hub-component-report/build/reports/tests/test
+          path: ./build/reports/tests/test
