@@ -2,7 +2,12 @@ name: 'Release'
 
 on:
   workflow_call:
-
+    inputs:
+      cache_version:
+        description: 'A cache version passed from the caller workflow'
+        required: false
+        type: string
+        default: 'v1'
 jobs:
   build:
     name: 'Release and publish'
@@ -27,7 +32,7 @@ jobs:
         uses: actions/cache@v1.1.0
         with:
           path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ secrets.CACHE_VERSION }}-${{ hashFiles('**/*.gradle') }}
+          key: ${{ runner.os }}-gradle-${{ inputs.cache_version }}-${{ hashFiles('**/*.gradle') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
       - name: 'Setup JDK 11'
