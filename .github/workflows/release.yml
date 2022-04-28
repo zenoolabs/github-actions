@@ -42,8 +42,6 @@ jobs:
       - name: 'Grant execute permission for gradlew'
         run: |
           chmod +x gradlew
-          echo "gradlew" >> .gitignore
-          echo ".gitignore" >> .gitignore
       - name: 'Build'
         run: ./gradlew clean build -x test
       - name: 'Run tests'
@@ -57,6 +55,6 @@ jobs:
           # Directory containing files to upload
           path: /home/runner/work/${{ env.GITHUB_REPO_NAME }}/${{ env.GITHUB_REPO_NAME }}/build/reports/tests/test
       - name: 'Release'
-        run: ./gradlew release
+        run: ./gradlew release -Prelease.disableUncommittedCheck
       - name: 'Publish'
         run: ./gradlew publish
