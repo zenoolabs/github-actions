@@ -1,0 +1,55 @@
+name: 'Deploy'
+
+on:
+  workflow_call:
+
+jobs:
+ buildAndDeployImage:
+  name: 'Build docker image and deploy'
+  runs-on: ubuntu-latest
+  steps:
+  - name: 'Setup ECS-CLI'
+    uses: marocchino/setup-ecs-cli@v1
+    with:
+      version: v1.18.1
+
+  - name: 'Checkout project'
+    uses: actions/checkout@v2
+
+  - name: 'Login to Amazon ECR'
+    if: ${{ github.event.inputs.command == 'deploy' }}
+    id: login-ecr
+    uses: aws-actions/amazon-ecr-login@v1
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
+      AWS_REGION: ${{ env.region }}
+
+  - name: 'Build and upload docker image'
+    if: ${{ github.event.inputs.command == 'deploy' }}
+    run: ./gradlew jib --image ${{ env.image-repo }} -PgithubRun
+
+  - name: 'Cluster configuration'
+    working-directory: docker/${{ env.docker-folder }}
+    run: |
+      ecs-cli configure --cluster ${{ env.cluster }} --default-launch-type ${{ env.launch-type }} --config-name ${{ env.config-name }} --region ${{ env.region }}
+      ecs-cli configure profile --access-key ${{ env.access-key }} --secret-key ${{ env.secret-key }} --profile-name ${{ env.profile-name }}
+
+  - name: 'Compose service up - deploying the new service'
+    if: ${{ github.event.inputs.command == 'deploy' }}
+    working-directory: docker/${{ env.docker-folder }}
+    run: |
+      ecs-cli compose --project-name ${{ env.project-name }} service up --create-log-groups --cluster-config ${{ env.config-name }} --ecs-profile ${{ env.profile-name }} --target-group-arn ${{ env.target-group-arn }} --container-name ${{ env.container-name }} --container-port ${{ env.container-port }}
+
+  - name: 'Compose service ${{ github.event.inputs.command }}'
+    if: ${{ github.event.inputs.command != 'deploy' && github.event.inputs.command != 'restart' }}
+    working-directory: docker/${{ env.docker-folder }}
+    run: |
+      ecs-cli compose --project-name ${{ env.project-name }} service ${{ github.event.inputs.command }} --cluster-config ${{ env.config-name }} --ecs-profile ${{ env.profile-name }}
+
+  - name: 'Compose service restart'
+    if: ${{ github.event.inputs.command == 'restart' }}
+    working-directory: docker/${{ env.docker-folder }}
+    run: |
+      ecs-cli compose --project-name ${{ env.project-name }} service stop --cluster-config ${{ env.config-name }} --ecs-profile ${{ env.profile-name }}
+      ecs-cli compose --project-name ${{ env.project-name }} service start --cluster-config ${{ env.config-name }} --ecs-profile ${{ env.profile-name }}
