@@ -2,6 +2,10 @@ name: 'Deploy'
 
 on:
   workflow_call:
+    inputs:
+      region:
+        required: true
+        type: string
 
 jobs:
  buildAndDeployImage:
@@ -23,7 +27,7 @@ jobs:
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
-      AWS_REGION: ${{ env.region }}
+      AWS_REGION: ${{ inputs.region }}
 
   - name: 'Build and upload docker image'
     if: ${{ github.event.inputs.command == 'deploy' }}
