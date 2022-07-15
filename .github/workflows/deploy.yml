@@ -55,7 +55,7 @@ jobs:
   - name: 'Checkout project'
     uses: actions/checkout@v2
 
-  - name: 'Login to Amazon ECR'
+  - name: 'Login to Amazon ECR, build & upload docker image'
     if: ${{ github.event.inputs.command == 'deploy' }}
     id: login-ecr
     uses: aws-actions/amazon-ecr-login@v1
@@ -63,10 +63,8 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.aws-access-key }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.aws-secret-key }}
       AWS_REGION: ${{ inputs.region }}
-
-  - name: 'Build and upload docker image'
-    if: ${{ github.event.inputs.command == 'deploy' }}
-    run: ./gradlew jib --image ${{ inputs.image-repo }} -PgithubRun
+    run: |
+      ./gradlew jib --image ${{ inputs.image-repo }} -PgithubRun
 
   - name: 'Cluster configuration'
     working-directory: docker/${{ inputs.docker-folder }}
