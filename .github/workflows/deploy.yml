@@ -2,15 +2,45 @@ name: 'Deploy'
 
 on:
   workflow_call:
-    inputs:
-      region:
-        required: true
-        type: string
     secrets:
       aws-access-key:
         required: true
       aws-secret-key:
         required: true
+    inputs:
+      region:
+        required: true
+        type: string
+      cluster:
+        required: true
+        type: string
+      config-name:
+        required: true
+        type: string
+      profile-name:
+        required: true
+        type: string
+      launch-type:
+        required: true
+        type: string
+      project-name:
+        required: true
+        type: string
+      target-group-arn:
+        required: true
+        type: string
+      container-name:
+        required: true
+        type: string
+      container-port:
+        required: true
+        type: string
+      image-repo:
+        required: true
+        type: string
+      docker-folder:
+        required: true
+        type: string
 
 jobs:
  buildAndDeployImage:
@@ -36,29 +66,29 @@ jobs:
 
   - name: 'Build and upload docker image'
     if: ${{ github.event.inputs.command == 'deploy' }}
-    run: ./gradlew jib --image ${{ env.image-repo }} -PgithubRun
+    run: ./gradlew jib --image ${{ inputs.image-repo }} -PgithubRun
 
   - name: 'Cluster configuration'
-    working-directory: docker/${{ env.docker-folder }}
+    working-directory: docker/${{ inputs.docker-folder }}
     run: |
-      ecs-cli configure --cluster ${{ env.cluster }} --default-launch-type ${{ env.launch-type }} --config-name ${{ env.config-name }} --region ${{ env.region }}
-      ecs-cli configure profile --access-key ${{ env.access-key }} --secret-key ${{ env.secret-key }} --profile-name ${{ env.profile-name }}
+      ecs-cli configure --cluster ${{ inputs.cluster }} --default-launch-type ${{ inputs.launch-type }} --config-name ${{ inputs.config-name }} --region ${{ inputs.region }}
+      ecs-cli configure profile --access-key ${{ inputs.access-key }} --secret-key ${{ inputs.secret-key }} --profile-name ${{ inputs.profile-name }}
 
   - name: 'Compose service up - deploying the new service'
     if: ${{ github.event.inputs.command == 'deploy' }}
-    working-directory: docker/${{ env.docker-folder }}
+    working-directory: docker/${{ inputs.docker-folder }}
     run: |
-      ecs-cli compose --project-name ${{ env.project-name }} service up --create-log-groups --cluster-config ${{ env.config-name }} --ecs-profile ${{ env.profile-name }} --target-group-arn ${{ env.target-group-arn }} --container-name ${{ env.container-name }} --container-port ${{ env.container-port }}
+      ecs-cli compose --project-name ${{ inputs.project-name }} service up --create-log-groups --cluster-config ${{ inputs.config-name }} --ecs-profile ${{ inputs.profile-name }} --target-group-arn ${{ inputs.target-group-arn }} --container-name ${{ inputs.container-name }} --container-port ${{ inputs.container-port }}
 
   - name: 'Compose service ${{ github.event.inputs.command }}'
     if: ${{ github.event.inputs.command != 'deploy' && github.event.inputs.command != 'restart' }}
-    working-directory: docker/${{ env.docker-folder }}
+    working-directory: docker/${{ inputs.docker-folder }}
     run: |
-      ecs-cli compose --project-name ${{ env.project-name }} service ${{ github.event.inputs.command }} --cluster-config ${{ env.config-name }} --ecs-profile ${{ env.profile-name }}
+      ecs-cli compose --project-name ${{ inputs.project-name }} service ${{ github.event.inputs.command }} --cluster-config ${{ inputs.config-name }} --ecs-profile ${{ inputs.profile-name }}
 
   - name: 'Compose service restart'
     if: ${{ github.event.inputs.command == 'restart' }}
-    working-directory: docker/${{ env.docker-folder }}
+    working-directory: docker/${{ inputs.docker-folder }}
     run: |
-      ecs-cli compose --project-name ${{ env.project-name }} service stop --cluster-config ${{ env.config-name }} --ecs-profile ${{ env.profile-name }}
-      ecs-cli compose --project-name ${{ env.project-name }} service start --cluster-config ${{ env.config-name }} --ecs-profile ${{ env.profile-name }}
+      ecs-cli compose --project-name ${{ inputs.project-name }} service stop --cluster-config ${{ inputs.config-name }} --ecs-profile ${{ inputs.profile-name }}
+      ecs-cli compose --project-name ${{ inputs.project-name }} service start --cluster-config ${{ inputs.config-name }} --ecs-profile ${{ inputs.profile-name }}
