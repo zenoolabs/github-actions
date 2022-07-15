@@ -58,7 +58,7 @@ jobs:
   - name: 'Login to Amazon ECR'
     if: ${{ github.event.inputs.command == 'deploy' }}
     id: login-ecr
-    uses: aws-actions/amazon-ecr-login@v1
+    uses: aws-actions/amazon-ecr-login@v1.5.0
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.aws-access-key }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.aws-secret-key }}
