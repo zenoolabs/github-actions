@@ -72,7 +72,7 @@ jobs:
     working-directory: docker/${{ inputs.docker-folder }}
     run: |
       ecs-cli configure --cluster ${{ inputs.cluster }} --default-launch-type ${{ inputs.launch-type }} --config-name ${{ inputs.config-name }} --region ${{ inputs.region }}
-      ecs-cli configure profile --access-key ${{ inputs.access-key }} --secret-key ${{ inputs.secret-key }} --profile-name ${{ inputs.profile-name }}
+      ecs-cli configure profile --access-key ${{ secrets.aws-access-key }} --secret-key ${{ secrets.aws-secret-key }} --profile-name ${{ inputs.profile-name }}
 
   - name: 'Compose service up - deploying the new service'
     if: ${{ github.event.inputs.command == 'deploy' }}
