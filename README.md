@@ -48,7 +48,9 @@ jobs:
 ```
 
 ## Build & Deploy Container
-This action first builds the container image and pushes to AWS Container Registry (ECR). As a last step, it deploys the container to AWS Container Service (ECS) via CLI.
+This action first builds the container image and pushes to AWS Container Registry (ECR) with the help of [JIB Gradle plugin](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin) defined in backend. At the last step, it deploys the container to AWS Container Service (ECS) via CLI.
+
+For details, see the workflow steps in [deploy.yml](./.github/workflows/deploy.yml).
 
 To add this action to your repo create `.github/workflows/deploy.yml` file with following content and update inputs and secrets accordingly:
 
