@@ -47,7 +47,7 @@ jobs:
   name: 'Build docker image and deploy'
   runs-on: ubuntu-latest
   steps:
-  - name: 'Setup ECS-CLI'
+  - name: 'Setup ECS-CLI' #Amazon Elastic Container Service (ECS) command line interface -> https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
     uses: marocchino/setup-ecs-cli@v1
     with:
       version: v1.18.1
@@ -55,7 +55,7 @@ jobs:
   - name: 'Checkout project'
     uses: actions/checkout@v2
 
-  - name: 'Login to Amazon ECR'
+  - name: 'Login to Amazon ECR' #Amazong Elastic Container Registry login action -> https://github.com/aws-actions/amazon-ecr-login
     if: ${{ github.event.inputs.command == 'deploy' }}
     id: login-ecr
     uses: aws-actions/amazon-ecr-login@v1.5.0
@@ -64,7 +64,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.aws-secret-key }}
       AWS_REGION: ${{ inputs.region }}
 
-  - name: 'Build and upload docker image'
+  - name: 'Build and upload docker image' #JIB Gradle Plugin -> https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin
     if: ${{ github.event.inputs.command == 'deploy' }}
     run: ./gradlew jib --image ${{ inputs.image-repo }} -PgithubRun
 
