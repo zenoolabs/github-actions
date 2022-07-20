@@ -3,7 +3,7 @@ name: 'Deploy'
 on:
   workflow_call:
     secrets:
-      nexus-user:
+      nexus-username:
         required: true
       nexus-password:
         required: true
@@ -64,7 +64,7 @@ jobs:
     id: login-ecr
     uses: aws-actions/amazon-ecr-login@v1.5.0
     env:
-      ORG_GRADLE_PROJECT_zenooNexusUser: ${{ secrets.nexus-user }}
+      ORG_GRADLE_PROJECT_zenooNexusUsername: ${{ secrets.nexus-username }}
       ORG_GRADLE_PROJECT_zenooNexusPassword: ${{ secrets.nexus-password }}
       AWS_ACCESS_KEY_ID: ${{ secrets.aws-access-key }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.aws-secret-key }}
