@@ -50,6 +50,12 @@ jobs:
  buildAndDeployImage:
   name: 'Build docker image and deploy'
   runs-on: ubuntu-latest
+  env:
+    AWS_ACCESS_KEY_ID: ${{ secrets.aws-access-key }}
+    AWS_SECRET_ACCESS_KEY: ${{ secrets.aws-secret-key }}
+    AWS_REGION: ${{ inputs.region }}
+    ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.nexus-username }}
+    ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.nexus-password }}
   steps:
   - name: 'Setup ECS-CLI' #Amazon Elastic Container Service (ECS) command line interface -> https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
     uses: marocchino/setup-ecs-cli@v1
@@ -63,17 +69,10 @@ jobs:
     if: ${{ github.event.inputs.command == 'deploy' }}
     id: login-ecr
     uses: aws-actions/amazon-ecr-login@v1.5.0
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.aws-access-key }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.aws-secret-key }}
-      AWS_REGION: ${{ inputs.region }}
 
   - name: 'Build and upload docker image' #JIB Gradle Plugin -> https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin
     if: ${{ github.event.inputs.command == 'deploy' }}
     run: ./gradlew jib --image ${{ inputs.image-repo }} -PgithubRun
-    env:
-      ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.nexus-username }}
-      ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.nexus-password }}
 
   - name: 'Cluster configuration'
     working-directory: docker/${{ inputs.docker-folder }}
