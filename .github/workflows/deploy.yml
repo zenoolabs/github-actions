@@ -3,6 +3,10 @@ name: 'Deploy'
 on:
   workflow_call:
     secrets:
+      nexus-user:
+        required: true
+      nexus-password:
+        required: true
       aws-access-key:
         required: true
       aws-secret-key:
