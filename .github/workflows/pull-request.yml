@@ -2,6 +2,11 @@ name: 'Pull Request Build'
 
 on:
   workflow_call:
+    secrets:
+      nexus-username:
+        required: true
+      nexus-password:
+        required: true
     inputs:
       cache_version:
         description: 'A cache version passed from the caller workflow'
@@ -15,6 +20,10 @@ jobs:
     timeout-minutes: 30
 
     runs-on: ubuntu-latest
+
+    env:
+      ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.nexus-username }}
+      ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.nexus-password }}
 
     steps:
       - name: 'Getting repository name'
