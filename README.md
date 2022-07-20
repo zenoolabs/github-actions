@@ -21,7 +21,10 @@ on:
 jobs:
   build:
     name: 'Zenoo Build'
-    uses: zenoolabs/github-actions/.github/workflows/pull-request.yml@v3
+    uses: zenoolabs/github-actions/.github/workflows/pull-request.yml@v4
+    secrets:
+      nexus-username: ${{ secrets.NEXUS_USERNAME }}
+      nexus-password: ${{ secrets.NEXUS_PASSWORD }}
 ```
 
 ## Release
@@ -44,7 +47,10 @@ on:
 jobs:
   release:
     name: 'Zenoo Release'
-    uses: zenoolabs/github-actions/.github/workflows/release.yml@v3
+    uses: zenoolabs/github-actions/.github/workflows/release.yml@v4
+    secrets:
+      nexus-username: ${{ secrets.NEXUS_USERNAME }}
+      nexus-password: ${{ secrets.NEXUS_PASSWORD }}
 ```
 
 ## Build & Deploy Container
@@ -75,8 +81,10 @@ on:
 jobs:
  buildAndDeploy:
     name: 'Build and deploy container'
-    uses: zenoolabs/github-actions/.github/workflows/deploy.yml@v3
+    uses: zenoolabs/github-actions/.github/workflows/deploy.yml@v4
     secrets:
+      nexus-username: ${{ secrets.NEXUS_USERNAME }}
+      nexus-password: ${{ secrets.NEXUS_PASSWORD }}      
       aws-access-key: ${{ secrets.AWS_ACCESS_KEY }}
       aws-secret-key: ${{ secrets.AWS_SECRET_KEY }}
     with:
