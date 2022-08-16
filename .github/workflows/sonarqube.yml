@@ -66,7 +66,7 @@ jobs:
       - name: 'Run SonarQube'
         run: ./gradlew check sonarqube -Dsonar.projectKey=${{ inputs.sonar-project-key }} -Dsonar.projectName=${{ inputs.sonar-project-key }}
       - name: 'Download Sonar CNES Report tool'
-        run: curl -L -O https://github.com/zenoolabs/github-actions/raw/feature/add-sonar-action/bin/sonar-cnes-report.jar
+        run: curl -L -O https://github.com/zenoolabs/github-actions/raw/main/bin/sonar-cnes-report.jar
       - name: 'Acquire Sonar Report'
         run: java -jar sonar-cnes-report.jar -s ${{ secrets.sonarqube-host }} -t ${{ secrets.sonarqube-token }} -p ${{ inputs.sonar-project-key }}
       - name: Get current date
