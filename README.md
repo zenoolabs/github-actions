@@ -100,3 +100,34 @@ jobs:
       image-repo: 917319201960.dkr.ecr.us-west-2.amazonaws.com/hub-instance-template:v0.0.1
       docker-folder: test-us
 ```
+
+## SonarQube Static Code Analysis Report
+Creates SonarQube report. For details, see the workflow steps in [sonarqube.yml](./.github/workflows/sonarqube.yml).
+
+To add this action to your repo create `.github/workflows/sonarqube.yml` file with following content and update inputs and secrets accordingly:
+```yaml
+name: 'SonarQube Static Code Analysis Report'
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - master
+      - 'master-legacy'
+      - 'hotfix/**'
+    paths-ignore:
+      - 'README.md'
+      - '.github/**'
+
+jobs:
+  build:
+    name: 'SonarQube SCA Report'
+    uses: zenoolabs/github-actions/.github/workflows/sonarqube.yml@v5
+    secrets:
+      sonarqube-host: ${{ secrets.SONARQUBE_HOST }}
+      sonarqube-token: ${{ secrets.SONARQUBE_TOKEN }}
+      nexus-username: ${{ secrets.NEXUS_USERNAME }}
+      nexus-password: ${{ secrets.NEXUS_PASSWORD }}
+    with:
+      sonar-project-key: hub      
+```
