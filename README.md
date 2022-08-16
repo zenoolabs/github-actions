@@ -126,6 +126,8 @@ jobs:
     secrets:
       sonarqube-host: ${{ secrets.SONARQUBE_HOST }}
       sonarqube-token: ${{ secrets.SONARQUBE_TOKEN }}
+      nexus-username: ${{ secrets.NEXUS_USERNAME }}
+      nexus-password: ${{ secrets.NEXUS_PASSWORD }}
     with:
       sonar-project-key: hub      
 ```

@@ -3,6 +3,10 @@ name: 'SonarQube Static Code Analysis (SCA)'
 on:
   workflow_call:
     secrets:
+      nexus-username:
+        required: true
+      nexus-password:
+        required: true
       sonarqube-host:
         required: true
       sonarqube-token:
@@ -26,6 +30,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
+      ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.nexus-username }}
+      ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.nexus-password }}
       ORG_GRADLE_PROJECT_sonarqubeHostUrl: ${{ secrets.sonarqube-host }}
       ORG_GRADLE_PROJECT_sonarqubeLoginToken: ${{ secrets.sonarqube-token }}
 
