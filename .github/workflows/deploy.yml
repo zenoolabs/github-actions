@@ -75,26 +75,26 @@ jobs:
     run: ./gradlew jib --image ${{ inputs.image-repo }} -PgithubRun
 
   - name: 'Cluster configuration'
-    working-directory: docker/${{ inputs.docker-folder }}
+    working-directory: ${{ inputs.docker-folder }}
     run: |
       ecs-cli configure --cluster ${{ inputs.cluster }} --default-launch-type ${{ inputs.launch-type }} --config-name ${{ inputs.config-name }} --region ${{ inputs.region }}
       ecs-cli configure profile --access-key ${{ secrets.aws-access-key }} --secret-key ${{ secrets.aws-secret-key }} --profile-name ${{ inputs.profile-name }}
 
   - name: 'Compose service up - deploying the new service'
     if: ${{ github.event.inputs.command == 'deploy' }}
-    working-directory: docker/${{ inputs.docker-folder }}
+    working-directory: ${{ inputs.docker-folder }}
     run: |
       ecs-cli compose --project-name ${{ inputs.project-name }} service up --create-log-groups --cluster-config ${{ inputs.config-name }} --ecs-profile ${{ inputs.profile-name }} --target-group-arn ${{ inputs.target-group-arn }} --container-name ${{ inputs.container-name }} --container-port ${{ inputs.container-port }}
 
   - name: 'Compose service ${{ github.event.inputs.command }}'
     if: ${{ github.event.inputs.command != 'deploy' && github.event.inputs.command != 'restart' }}
-    working-directory: docker/${{ inputs.docker-folder }}
+    working-directory: ${{ inputs.docker-folder }}
     run: |
       ecs-cli compose --project-name ${{ inputs.project-name }} service ${{ github.event.inputs.command }} --cluster-config ${{ inputs.config-name }} --ecs-profile ${{ inputs.profile-name }}
 
   - name: 'Compose service restart'
     if: ${{ github.event.inputs.command == 'restart' }}
-    working-directory: docker/${{ inputs.docker-folder }}
+    working-directory: ${{ inputs.docker-folder }}
     run: |
       ecs-cli compose --project-name ${{ inputs.project-name }} service stop --cluster-config ${{ inputs.config-name }} --ecs-profile ${{ inputs.profile-name }}
       ecs-cli compose --project-name ${{ inputs.project-name }} service start --cluster-config ${{ inputs.config-name }} --ecs-profile ${{ inputs.profile-name }}
