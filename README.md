@@ -81,7 +81,7 @@ on:
 jobs:
  buildAndDeploy:
     name: 'Build and deploy container'
-    uses: zenoolabs/github-actions/.github/workflows/deploy.yml@v4
+    uses: zenoolabs/github-actions/.github/workflows/deploy.yml@v8
     secrets:
       nexus-username: ${{ secrets.NEXUS_USERNAME }}
       nexus-password: ${{ secrets.NEXUS_PASSWORD }}      
@@ -98,7 +98,7 @@ jobs:
       container-name: hub-instance-template
       container-port: 8080
       image-repo: 917319201960.dkr.ecr.us-west-2.amazonaws.com/hub-instance-template:v0.0.1
-      docker-folder: test-us
+      docker-folder: docker/test-us
 ```
 
 ## SonarQube Static Code Analysis Report
