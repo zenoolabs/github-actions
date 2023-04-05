@@ -61,12 +61,12 @@ jobs:
     ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.nexus-password }}
   steps:
   - name: 'Setup ECS-CLI' #Amazon Elastic Container Service (ECS) command line interface -> https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
-    uses: marocchino/setup-ecs-cli@v1
+    uses: marocchino/setup-ecs-cli@v1.1.1
     with:
       version: v1.18.1
 
   - name: 'Checkout project'
-    uses: actions/checkout@v2
+    uses: actions/checkout@v3
 
   - name: 'Login to Amazon ECR' #Amazong Elastic Container Registry login action -> https://github.com/aws-actions/amazon-ecr-login
     if: ${{ github.event.inputs.command == 'deploy' && inputs.build-image }}
