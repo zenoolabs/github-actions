@@ -40,7 +40,7 @@ on:
         required: true
         type: string
       image-repo:
-        required: true
+        required: false
         type: string
       docker-folder:
         required: true
