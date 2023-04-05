@@ -43,7 +43,7 @@ on:
         required: true
         type: string
       build-image:
-        required: true
+        required: false
         type: boolean
       image-repo:
         required: false
