@@ -97,9 +97,9 @@ jobs:
       target-group-arn: arn:aws:elasticloadbalancing:us-west-2:123456789:targetgroup/hub-instance-template-test-us/8449abe109770c92
       container-name: hub-instance-template
       container-port: 8080
-      image-repo: 917319201960.dkr.ecr.us-west-2.amazonaws.com/hub-instance-template:v0.0.1
       docker-folder: docker/test-us
       build-image: true
+      image-repo: 917319201960.dkr.ecr.us-west-2.amazonaws.com/hub-instance-template:v0.0.1
 ```
 
 ## SonarQube Static Code Analysis Report
