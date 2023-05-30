@@ -64,4 +64,4 @@ jobs:
           # Artifact name
           name: test_results
           # Directory containing files to upload
-          path: ./backend/build/reports/tests
+          path: ./backend/build/test-results
