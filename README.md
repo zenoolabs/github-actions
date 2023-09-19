@@ -28,13 +28,21 @@ jobs:
 ```
 
 ## Release
-Supposed to be run on push to master branch to tag new version and upload it to Nexus.
+Supposed to be run on push to master branch to tag new version and upload it to Nexus or Docker repository depending on
+the value of following input: `docker_image`.
+
 To add this action to your repo create `.github/workflows/release.yml` file with following content:
 ```yaml
 name: Release
+run-name: "Release ${{github.ref_name}}"
 
 on:
   workflow_dispatch:
+    inputs:
+      force_version:
+        description: If specified, this version will be forced
+        type: string
+        required: false
   push:
     branches:
       - master
@@ -47,21 +55,29 @@ on:
 jobs:
   release:
     name: 'Zenoo Release'
-    uses: zenoolabs/github-actions/.github/workflows/release.yml@v4
+    uses: zenoolabs/github-actions/.github/workflows/release.yml@v11
     secrets:
       nexus-username: ${{ secrets.NEXUS_USERNAME }}
       nexus-password: ${{ secrets.NEXUS_PASSWORD }}
+      aws-access-key: ${{ secrets.AWS_ACCESS_KEY }}
+      aws-secret-key: ${{ secrets.AWS_SECRET_KEY }}
+    with:
+      docker_image: true
+      aws_region: 'eu-west-1'
 ```
 
-## Build & Deploy Container
-This action first builds the container image and pushes to AWS Container Registry (ECR) with the help of [JIB Gradle plugin](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin) defined in backend. At the last step, it deploys the container to AWS Container Service (ECS) via CLI.
+## Compose
+This action is used to execute compose steps via ecs-cli. It is mainly used for the deployment of container and should be
+executed from the release tag.
 
-For details, see the workflow steps in [deploy.yml](./.github/workflows/deploy.yml).
+For details, see the workflow steps in [compose.yml](./.github/workflows/compose.yml).
 
-To add this action to your repo create `.github/workflows/deploy.yml` file with following content and update inputs and secrets accordingly:
+To add this action to your repo create `.github/workflows/compose.yml` file with following content and update inputs and
+secrets accordingly:
 
 ```yaml
-name: 'Build & Deploy Container'
+name: 'Compose'
+run-name: "Compose ${{github.event.inputs.command}} ${{github.ref_name}}"
 
 on:
   workflow_dispatch:
@@ -79,16 +95,14 @@ on:
           - ps
 
 jobs:
- buildAndDeploy:
-    name: 'Build and deploy container'
-    uses: zenoolabs/github-actions/.github/workflows/deploy.yml@v9
-    secrets:
-      nexus-username: ${{ secrets.NEXUS_USERNAME }}
-      nexus-password: ${{ secrets.NEXUS_PASSWORD }}      
+ compose:
+    name: 'Compose'
+    uses: zenoolabs/github-actions/.github/workflows/compose.yml@v11
+    secrets:   
       aws-access-key: ${{ secrets.AWS_ACCESS_KEY }}
       aws-secret-key: ${{ secrets.AWS_SECRET_KEY }}
     with:
-      region: us-west-2
+      region: eu-west-1
       cluster: test-us-cluster
       config-name: test-us-config
       profile-name: test-us-profile
@@ -98,8 +112,6 @@ jobs:
       container-name: hub-instance-template
       container-port: 8080
       docker-folder: docker/test-us
-      build-image: true
-      image-repo: 917319201960.dkr.ecr.us-west-2.amazonaws.com/hub-instance-template:v0.0.1
 ```
 
 ## SonarQube Static Code Analysis Report
