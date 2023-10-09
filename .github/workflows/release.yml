@@ -31,6 +31,10 @@ on:
         description: 'If specified, this version will be forced'
         required: false
         type: string
+      additional_images:
+        description: 'If specified, these additional images will be built and pushed'
+        required: false
+        type: string
 
 jobs:
   release:
@@ -81,6 +85,14 @@ jobs:
       - name: 'Build and publish Docker image'
         if: inputs.docker_image == true
         run: ./gradlew jib -PgithubRun
+      - name: 'Build and publish additional Docker images'
+        if: inputs.docker_image == true && inputs.additional_images != null
+        run: |
+          VERSION=$(./gradlew cV -q -Prelease.quiet)
+          IFS=',' read -ra IMAGES <<< "${{ inputs.additional_images }}"
+          for IMAGE in "${IMAGES[@]}"; do
+            ./gradlew jib -PgithubRun --image="$IMAGE:v$VERSION"
+          done
       - name: 'Build and publish jar'
         if: inputs.docker_image == false
         run: ./gradlew publish
