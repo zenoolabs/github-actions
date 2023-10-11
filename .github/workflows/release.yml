@@ -31,8 +31,8 @@ on:
         description: 'If specified, this version will be forced'
         required: false
         type: string
-      additional_images:
-        description: 'If specified, these additional images will be built and pushed'
+      image:
+        description: 'If specified, uses this target image reference'
         required: false
         type: string
 
@@ -83,16 +83,13 @@ jobs:
       - name: 'Create release'
         run: ./gradlew createRelease -Prelease.forceVersion=${{github.event.inputs.force_version}}
       - name: 'Build and publish Docker image'
-        if: inputs.docker_image == true
+        if: inputs.docker_image == true && (inputs.image == null || inputs.image == '')
         run: ./gradlew jib -PgithubRun
       - name: 'Build and publish additional Docker images'
-        if: inputs.docker_image == true && inputs.additional_images != null
+        if: inputs.docker_image == true && inputs.image != null && inputs.image != ''
         run: |
           VERSION=$(./gradlew cV -q -Prelease.quiet)
-          IFS=',' read -ra IMAGES <<< "${{ inputs.additional_images }}"
-          for IMAGE in "${IMAGES[@]}"; do
-            ./gradlew jib -PgithubRun --image="$IMAGE:v$VERSION"
-          done
+          ./gradlew jib -PgithubRun -Djib.to.image="${{ inputs.image }}:v$VERSION"
       - name: 'Build and publish jar'
         if: inputs.docker_image == false
         run: ./gradlew publish
