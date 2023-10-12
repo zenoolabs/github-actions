@@ -31,10 +31,6 @@ on:
         description: 'If specified, this version will be forced'
         required: false
         type: string
-      image:
-        description: 'If specified, uses this target image reference'
-        required: false
-        type: string
 
 jobs:
   release:
@@ -82,14 +78,13 @@ jobs:
           path: /home/runner/work/${{ env.GITHUB_REPO_NAME }}/${{ env.GITHUB_REPO_NAME }}/build/reports/tests/test
       - name: 'Create release'
         run: ./gradlew createRelease -Prelease.forceVersion=${{github.event.inputs.force_version}}
-      - name: 'Build and publish Docker image'
-        if: inputs.docker_image == true && (inputs.image == null || inputs.image == '')
-        run: ./gradlew jib -PgithubRun
-      - name: 'Build and publish additional Docker images'
-        if: inputs.docker_image == true && inputs.image != null && inputs.image != ''
+      - name: 'Print out version'
         run: |
           VERSION=$(./gradlew cV -q -Prelease.quiet)
-          ./gradlew jib -PgithubRun -Djib.to.image="${{ inputs.image }}:v$VERSION"
+          echo "Pushing version v$VERSION to ${{ inputs.region }}"
+      - name: 'Build and publish Docker image'
+        if: inputs.docker_image == true
+        run: ./gradlew jib -PgithubRun
       - name: 'Build and publish jar'
         if: inputs.docker_image == false
         run: ./gradlew publish
