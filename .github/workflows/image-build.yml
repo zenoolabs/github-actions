@@ -14,6 +14,9 @@ on:
       image:
         required: true
         type: string
+      version:
+        required: true
+        type: string
 
 jobs:
  buildImage:
@@ -43,6 +46,8 @@ jobs:
     uses: aws-actions/amazon-ecr-login@v1.5.0
   - name: 'Build and publish Docker image'
     run: |
-      VERSION=$(./gradlew cV -q -Prelease.quiet)
-      echo "Pushing version v$VERSION to ${{ inputs.region }}"
-      ./gradlew jib -PgithubRun -Djib.to.image="${{ inputs.image }}:v$VERSION"
+      echo "Pushing version ${{ inputs.version }} to ${{ inputs.region }}"
+      ./gradlew jib -PgithubRun -Djib.to.image="${{ inputs.image }}:${{ inputs.version }}"
+  - name: 'Create summary'
+    run: |
+      echo "Published version ${{ inputs.version }} to ${{ inputs.region }}" >> $GITHUB_STEP_SUMMARY
