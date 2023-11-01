@@ -88,6 +88,7 @@ on:
         description: Deploy/Restart/Down/Start/Stop/Process
         options:
           - deploy
+          - scale
           - restart
           - down
           - start
@@ -112,6 +113,7 @@ jobs:
       container-name: hub-instance-template
       container-port: 8080
       docker-folder: docker/test-us
+      scale: 3
 ```
 
 ## SonarQube Static Code Analysis Report
