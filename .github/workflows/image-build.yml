@@ -17,7 +17,9 @@ on:
       version:
         required: true
         type: string
-
+      ref:
+        required: false
+        type: string
 jobs:
  buildImage:
   name: 'Build docker image'
@@ -31,7 +33,14 @@ jobs:
     uses: marocchino/setup-ecs-cli@v1
     with:
       version: v1.18.1
+  - name: 'Checkout project using ref ${{ github.event.inputs.ref }}'
+    if: github.event.inputs.ref != ''
+    uses: actions/checkout@v2
+    with:
+      ref: ${{ inputs.ref }}
+      fetch-depth: 0
   - name: 'Checkout project'
+    if: github.event.inputs.ref == ''
     uses: actions/checkout@v2
     with:
       fetch-depth: 0
