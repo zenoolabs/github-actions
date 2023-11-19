@@ -35,6 +35,9 @@ on:
       version:
         description: "Released version"
         value: ${{ jobs.release.outputs.version }}
+      sha:
+        description: "Released version"
+        value: ${{ jobs.release.outputs.sha }}
 
 jobs:
   release:
