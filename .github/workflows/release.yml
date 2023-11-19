@@ -43,6 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.get-version.outputs.version }}
+      sha: ${{ steps.get-sha.outputs.sha }}
     env:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.nexus-username }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.nexus-password }}
@@ -88,7 +89,7 @@ jobs:
         id: get-version
         run: |
           VERSION=$(./gradlew cV -q -Prelease.quiet)
-          echo "Pushing version v$VERSION to ${{ inputs.aws_region }}"
+          echo "Releasing version v$VERSION"
           echo "version=v$VERSION" >> $GITHUB_OUTPUT
       - name: 'Build and publish Docker image'
         if: inputs.docker_image == true
@@ -98,6 +99,16 @@ jobs:
         run: ./gradlew publish
       - name: 'Push release'
         run: ./gradlew pushRelease
+      - name: 'Get git head sha'
+        id: get-sha
+        run: |
+          sha_head=$(git rev-parse HEAD)
+          echo $sha_head
+          echo "sha=$sha_head" >> $GITHUB_OUTPUT
       - name: 'Create summary'
+        if: inputs.docker_image == true
         run: |
           echo "Released version ${{ steps.get-version.outputs.version }} and published to ${{ inputs.aws_region }}" >> $GITHUB_STEP_SUMMARY
+      - name: 'Add sha to summary'
+        run: |
+          echo "Released version ${{ steps.get-version.outputs.version }} commit has this sha: ${{ steps.get-sha.outputs.sha }}" >> $GITHUB_STEP_SUMMARY
