@@ -31,12 +31,22 @@ on:
         description: 'If specified, this version will be forced'
         required: false
         type: string
+    outputs:
+      version:
+        description: "Released version"
+        value: ${{ jobs.release.outputs.version }}
+      sha:
+        description: "Released version"
+        value: ${{ jobs.release.outputs.sha }}
 
 jobs:
   release:
     name: 'Release'
     timeout-minutes: 30
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+      sha: ${{ steps.get-sha.outputs.sha }}
     env:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.nexus-username }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.nexus-password }}
@@ -78,6 +88,12 @@ jobs:
           path: /home/runner/work/${{ env.GITHUB_REPO_NAME }}/${{ env.GITHUB_REPO_NAME }}/build/reports/tests/test
       - name: 'Create release'
         run: ./gradlew createRelease -Prelease.forceVersion=${{github.event.inputs.force_version}}
+      - name: 'Get version'
+        id: get-version
+        run: |
+          VERSION=$(./gradlew cV -q -Prelease.quiet)
+          echo "Releasing version v$VERSION"
+          echo "version=v$VERSION" >> $GITHUB_OUTPUT
       - name: 'Build and publish Docker image'
         if: inputs.docker_image == true
         run: ./gradlew jib -PgithubRun
@@ -86,3 +102,16 @@ jobs:
         run: ./gradlew publish
       - name: 'Push release'
         run: ./gradlew pushRelease
+      - name: 'Get git head sha'
+        id: get-sha
+        run: |
+          sha_head=$(git rev-parse HEAD)
+          echo $sha_head
+          echo "sha=$sha_head" >> $GITHUB_OUTPUT
+      - name: 'Create summary'
+        if: inputs.docker_image == true
+        run: |
+          echo "Released version ${{ steps.get-version.outputs.version }} and published to ${{ inputs.aws_region }}" >> $GITHUB_STEP_SUMMARY
+      - name: 'Add sha to summary'
+        run: |
+          echo "Released version ${{ steps.get-version.outputs.version }} commit has this sha: ${{ steps.get-sha.outputs.sha }}" >> $GITHUB_STEP_SUMMARY

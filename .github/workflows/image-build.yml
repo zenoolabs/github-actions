@@ -1,12 +1,8 @@
-name: 'Build image'
+name: 'Build and publish image'
 
 on:
   workflow_call:
     secrets:
-      nexus-username:
-        required: true
-      nexus-password:
-        required: true
       aws-access-key:
         required: true
       aws-secret-key:
@@ -15,10 +11,15 @@ on:
       region:
         required: true
         type: string
-      image-repo:
+      image:
         required: true
         type: string
-
+      version:
+        required: true
+        type: string
+      ref:
+        required: false
+        type: string
 jobs:
  buildImage:
   name: 'Build docker image'
@@ -27,20 +28,35 @@ jobs:
     AWS_ACCESS_KEY_ID: ${{ secrets.aws-access-key }}
     AWS_SECRET_ACCESS_KEY: ${{ secrets.aws-secret-key }}
     AWS_REGION: ${{ inputs.region }}
-    ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.nexus-username }}
-    ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.nexus-password }}
   steps:
   - name: 'Setup ECS-CLI' #Amazon Elastic Container Service (ECS) command line interface -> https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
     uses: marocchino/setup-ecs-cli@v1
     with:
       version: v1.18.1
-
-  - name: 'Checkout project'
+  - name: 'Checkout project using ref ${{ inputs.ref }}'
+    if: ${{ inputs.ref != '' }}
     uses: actions/checkout@v2
-
+    with:
+      ref: ${{ inputs.ref }}
+      fetch-depth: 0
+  - name: 'Checkout project'
+    if: ${{ inputs.ref == '' }}
+    uses: actions/checkout@v2
+    with:
+      fetch-depth: 0
+  - name: 'Setup JDK 11'
+    uses: actions/setup-java@v3
+    with:
+      distribution: 'zulu'
+      java-version: 11
+      cache: 'gradle'
   - name: 'Login to Amazon ECR' #Amazong Elastic Container Registry login action -> https://github.com/aws-actions/amazon-ecr-login
     id: login-ecr
     uses: aws-actions/amazon-ecr-login@v1.5.0
-
-  - name: 'Build and upload docker image' #JIB Gradle Plugin -> https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin
-    run: ./gradlew jib --image ${{ inputs.image-repo }}
+  - name: 'Build and publish Docker image'
+    run: |
+      echo "Pushing version ${{ inputs.version }} to ${{ inputs.region }}"
+      ./gradlew jib -PgithubRun -Djib.to.image="${{ inputs.image }}:${{ inputs.version }}"
+  - name: 'Create summary'
+    run: |
+      echo "Published version ${{ inputs.version }} to ${{ inputs.region }}" >> $GITHUB_STEP_SUMMARY
