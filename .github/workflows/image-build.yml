@@ -33,14 +33,14 @@ jobs:
     uses: marocchino/setup-ecs-cli@v1
     with:
       version: v1.18.1
-  - name: 'Checkout project using ref ${{ github.event.inputs.ref }}'
-    if: github.event.inputs.ref != ''
+  - name: 'Checkout project using ref ${{ inputs.ref }}'
+    if: ${{ inputs.ref != '' }}
     uses: actions/checkout@v2
     with:
       ref: ${{ inputs.ref }}
       fetch-depth: 0
   - name: 'Checkout project'
-    if: github.event.inputs.ref == ''
+    if: ${{ inputs.ref == '' }}
     uses: actions/checkout@v2
     with:
       fetch-depth: 0
