@@ -1,4 +1,4 @@
-name: 'Build and publish image'
+name: "Build and publish image"
 
 on:
   workflow_call:
@@ -21,42 +21,60 @@ on:
         required: false
         type: string
 jobs:
- buildImage:
-  name: 'Build docker image'
-  runs-on: ubuntu-latest
-  env:
-    AWS_ACCESS_KEY_ID: ${{ secrets.aws-access-key }}
-    AWS_SECRET_ACCESS_KEY: ${{ secrets.aws-secret-key }}
-    AWS_REGION: ${{ inputs.region }}
-  steps:
-  - name: 'Setup ECS-CLI' #Amazon Elastic Container Service (ECS) command line interface -> https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
-    uses: marocchino/setup-ecs-cli@v1
-    with:
-      version: v1.21.0
-  - name: 'Checkout project using ref ${{ inputs.ref }}'
-    if: ${{ inputs.ref != '' }}
-    uses: actions/checkout@v4
-    with:
-      ref: ${{ inputs.ref }}
-      fetch-depth: 0
-  - name: 'Checkout project'
-    if: ${{ inputs.ref == '' }}
-    uses: actions/checkout@v4
-    with:
-      fetch-depth: 0
-  - name: 'Setup JDK 21'
-    uses: actions/setup-java@v4
-    with:
-      distribution: 'temurin'
-      java-version: 21
-      cache: 'gradle'
-  - name: 'Login to Amazon ECR' #Amazong Elastic Container Registry login action -> https://github.com/aws-actions/amazon-ecr-login
-    id: login-ecr
-    uses: aws-actions/amazon-ecr-login@v1.5.0
-  - name: 'Build and publish Docker image'
-    run: |
-      echo "Pushing version ${{ inputs.version }} to ${{ inputs.region }}"
-      ./gradlew jib -PgithubRun -Djib.to.image="${{ inputs.image }}:${{ inputs.version }}"
-  - name: 'Create summary'
-    run: |
-      echo "Published version ${{ inputs.version }} to ${{ inputs.region }}" >> $GITHUB_STEP_SUMMARY
+  buildImage:
+    name: 'Build docker image'
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.aws-access-key }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.aws-secret-key }}
+      AWS_REGION: ${{ inputs.region }}
+    steps:
+      - name: 'Setup ECS-CLI' #Amazon Elastic Container Service (ECS) command line interface -> https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
+        uses: marocchino/setup-ecs-cli@v1
+        with:
+          version: v1.21.0
+
+      - name: 'Checkout project using ref ${{ inputs.ref }}'
+        if: ${{ inputs.ref != '' }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: 'Checkout project'
+        if: ${{ inputs.ref == '' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 'Setup JDK 21'
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 21
+          cache: 'gradle'
+
+      # - name: 'Login to Amazon ECR' #Amazong Elastic Container Registry login action -> https://github.com/aws-actions/amazon-ecr-login
+      #   id: login-ecr
+      #   uses: aws-actions/amazon-ecr-login@v1.5.0
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::323683957335:role/ecr-assume-role-github-actions
+          aws-region: eu-west-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registries: "323683957335"
+
+      - name: 'Build and publish Docker image'
+        run: |
+          echo "Pushing version ${{ inputs.version }} to ${{ inputs.region }}"
+          ./gradlew jib -PgithubRun -Djib.to.image="${{ inputs.image }}:${{ inputs.version }}"
+
+      - name: 'Create summary'
+        run: |
+          echo "Published version ${{ inputs.version }} to ${{ inputs.region }}" >> $GITHUB_STEP_SUMMARY
