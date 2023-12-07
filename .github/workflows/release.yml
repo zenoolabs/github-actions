@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
-      contents: read
+      contents: write
     outputs:
       version: ${{ steps.get-version.outputs.version }}
       sha: ${{ steps.get-sha.outputs.sha }}
