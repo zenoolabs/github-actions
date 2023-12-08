@@ -7,12 +7,6 @@ on:
         required: true
       nexus-password:
         required: true
-      aws-access-key:
-        required: false
-        description: "Required if publishing Docker image"
-      aws-secret-key:
-        required: false
-        description: "Required if publishing Docker image"
     inputs:
       cache_version:
         description: "A cache version passed from the caller workflow"
@@ -53,8 +47,6 @@ jobs:
     env:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.nexus-username }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.nexus-password }}
-      # AWS_ACCESS_KEY_ID: ${{ secrets.aws-access-key }}
-      # AWS_SECRET_ACCESS_KEY: ${{ secrets.aws-secret-key }}
       AWS_REGION: eu-west-1
     steps:
       - name: "Getting repository name"
