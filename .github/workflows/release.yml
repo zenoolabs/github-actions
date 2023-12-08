@@ -68,8 +68,8 @@ jobs:
         if: inputs.docker_image == true
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::323683957335:role/ecr-assume-role-github-actions
-          aws-region: eu-west-1
+          role-to-assume: $AWS_ECR_ASSUME_ROLE
+          aws-region: $AWS_HOME_REGION
 
       - name: Login to Amazon ECR
         id: login-ecr
