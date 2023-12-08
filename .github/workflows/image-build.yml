@@ -2,11 +2,6 @@ name: "Build and publish image"
 
 on:
   workflow_call:
-    secrets:
-      aws-access-key:
-        required: true
-      aws-secret-key:
-        required: true
     inputs:
       region:
         required: true
@@ -25,8 +20,6 @@ jobs:
     name: 'Build docker image'
     runs-on: ubuntu-latest
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.aws-access-key }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.aws-secret-key }}
       AWS_REGION: ${{ inputs.region }}
     steps:
       - name: 'Setup ECS-CLI' #Amazon Elastic Container Service (ECS) command line interface -> https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
