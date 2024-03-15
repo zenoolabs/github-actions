@@ -70,7 +70,7 @@ jobs:
     if: ${{ github.event.inputs.command == 'deploy' }}
     working-directory: ${{ inputs.docker-folder }}
     run: |
-      ecs-cli compose --project-name ${{ inputs.project-name }} service up --create-log-groups --cluster-config ${{ inputs.config-name }} --ecs-profile ${{ inputs.profile-name }} --target-group-arn ${{ inputs.target-group-arn }} --container-name ${{ inputs.container-name }} --container-port ${{ inputs.container-port }}
+      ecs-cli compose --project-name ${{ inputs.project-name }} service up --create-log-groups --cluster-config ${{ inputs.config-name }} --ecs-profile ${{ inputs.profile-name }} --target-group-arn ${{ inputs.target-group-arn }} --container-name ${{ inputs.container-name }} --container-port ${{ inputs.container-port }} --enable-service-discovery
 
   - name: 'Compose service scale - scaling the service'
     if: ${{ github.event.inputs.command == 'deploy' || github.event.inputs.command == 'scale' }}
