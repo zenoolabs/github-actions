@@ -59,7 +59,12 @@ jobs:
       - name: 'Analyze dependencies'
         run: ./gradlew dependencyCheckAnalyze
       - name: 'Run SonarQube'
-        run: ./gradlew check sonarqube -Dsonar.projectKey=${{ inputs.sonar-project-key }} -Dsonar.projectName=${{ inputs.sonar-project-key }}
+        run: | 
+          ./gradlew check sonarqube \
+            -Dsonar.projectKey=${{ inputs.sonar-project-key }} \
+            -Dsonar.projectName=${{ inputs.sonar-project-key }} \
+            -Dsonar.host.url=${{ secrets.sonarqube-host }} \
+            -Dsonar.login=${{ secrets.sonarqube-token }}
       - name: 'Download Sonar CNES Report tool'
         run: curl -L -O https://github.com/zenoolabs/github-actions/raw/main/bin/sonar-cnes-report.jar
       - name: 'Acquire Sonar Report'
