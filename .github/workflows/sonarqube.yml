@@ -73,7 +73,7 @@ jobs:
             -Dsonar.token=${{ secrets.sonarqube-token }} \
             -Dsonar.projectVersion=${{ steps.get-version.outputs.version }}
       - name: 'Download Sonar CNES Report tool'
-        run: curl -L -O https://github.com/zenoolabs/github-actions/raw/main/bin/sonar-cnes-report.jar
+        run: curl -L -O https://github.com/zenoolabs/github-actions/raw/feature/PT-2412/bin/sonar-cnes-report.jar
       - name: 'Acquire Sonar Report'
         run: java -jar sonar-cnes-report.jar -s ${{ secrets.sonarqube-host }} -t ${{ secrets.sonarqube-token }} -p ${{ inputs.sonar-project-key }}
       - name: Get current date
