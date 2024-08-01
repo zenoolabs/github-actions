@@ -41,7 +41,7 @@ jobs:
         run: java -jar sonar-cnes-report.jar -s ${{ secrets.sonarqube-host }} -t ${{ secrets.sonarqube-token }} -p ${{ inputs.sonar-project-key }}
       - name: Get current date
         id: get-current-date
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: 'Upload Sonar report'
         uses: actions/upload-artifact@v4
         with:

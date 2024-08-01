@@ -26,9 +26,9 @@ jobs:
   build:
     name: 'Run static code analysis'
     timeout-minutes: 60
-
     runs-on: ubuntu-latest
-
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
     env:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.nexus-username }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.nexus-password }}
@@ -46,6 +46,8 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
       - name: 'Checkout'
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: 'Setup JDK 21'
         uses: actions/setup-java@v4
         with:
@@ -54,24 +56,31 @@ jobs:
           cache: 'gradle'
       - name: 'Grant execute permission for gradlew'
         run: chmod +x gradlew
-      - name: 'Run build and tests'
-        run: ./gradlew clean build
+      - name: 'Run build'
+        run: ./gradlew clean build -x test
+      - name: "Get version"
+        id: get-version
+        run: |
+          VERSION=$(./gradlew cV -q -Prelease.quiet)
+          echo "Running sonar for version v$VERSION"
+          echo "version=v$VERSION" >> $GITHUB_OUTPUT
       - name: 'Analyze dependencies'
         run: ./gradlew dependencyCheckAnalyze
       - name: 'Run SonarQube'
         run: | 
-          ./gradlew check sonarqube \
+          ./gradlew check sonar \
             -Dsonar.projectKey=${{ inputs.sonar-project-key }} \
             -Dsonar.projectName=${{ inputs.sonar-project-key }} \
             -Dsonar.host.url=${{ secrets.sonarqube-host }} \
-            -Dsonar.login=${{ secrets.sonarqube-token }}
+            -Dsonar.token=${{ secrets.sonarqube-token }} \
+            -Dsonar.projectVersion=${{ steps.get-version.outputs.version }}
       - name: 'Download Sonar CNES Report tool'
         run: curl -L -O https://github.com/zenoolabs/github-actions/raw/main/bin/sonar-cnes-report.jar
       - name: 'Acquire Sonar Report'
         run: java -jar sonar-cnes-report.jar -s ${{ secrets.sonarqube-host }} -t ${{ secrets.sonarqube-token }} -p ${{ inputs.sonar-project-key }}
       - name: Get current date
         id: get-current-date
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: 'Upload Sonar report'
         uses: actions/upload-artifact@v4
         with:
@@ -82,3 +91,6 @@ jobs:
         with:
           name: 'dependency-check-report'
           path: ./build/reports/dependency-check-report.html
+      - name: "Create summary"
+        run: |
+          echo "Executed sonar task for version ${{ steps.get-version.outputs.version }} on ${{ steps.get-current-date.outputs.date }}" >> $GITHUB_STEP_SUMMARY    
