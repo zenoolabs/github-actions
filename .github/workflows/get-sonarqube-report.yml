@@ -12,6 +12,11 @@ on:
         description: 'Key of the project in SonarQube'
         required: true
         type: string
+      use-cache:
+        description: 'Determines if cache should be used'
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   build:
@@ -29,12 +34,19 @@ jobs:
           echo "$GITHUB_CONTEXT"
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
-      - name: 'Setup JDK 21'
+      - name: 'Setup JDK 21 with cache'
         uses: actions/setup-java@v4
+        if: inputs.use-cache == true
         with:
           distribution: 'temurin'
           java-version: 21
           cache: 'gradle'
+      - name: 'Setup JDK 21 without cache'
+        uses: actions/setup-java@v4
+        if: inputs.use-cache == false
+        with:
+          distribution: 'temurin'
+          java-version: 21
       - name: 'Download Sonar CNES Report tool'
         run: curl -L -O https://github.com/zenoolabs/github-actions/raw/main/bin/sonar-cnes-report.jar
       - name: 'Acquire Sonar Report'
