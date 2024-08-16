@@ -76,14 +76,14 @@ jobs:
         with:
           # Using datetime in cache key as OWASP database may change, without the gradle file changing
           key: dependency-check-data-${{ runner.os }}-${{ steps.get-current-date.outputs.date }}-${{ hashFiles('**/build.gradle') }}
-          path: .gradle/dependency-check-data
+          path: ~/.gradle/dependency-check-data
       - name: 'Analyze dependencies'
         run: ./gradlew dependencyCheckAnalyze
       - name: 'Save Dependency Check Cache'
         uses: actions/cache/save@v4
         id: cache-save
         with:
-          path: .gradle/dependency-check-data
+          path: ~/.gradle/dependency-check-data
           key: dependency-check-data-${{ runner.os }}-${{ steps.get-current-date.outputs.date }}-${{ hashFiles('**/build.gradle') }}
       - name: 'Run SonarQube'
         run: | 
