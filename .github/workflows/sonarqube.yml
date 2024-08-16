@@ -70,7 +70,7 @@ jobs:
       - name: 'Get Date'
         id: get-date
         run: |
-          echo "datetime=$(/bin/date -u "+%Y%m%d%H")" >> $GITHUB_OUTPUT
+          echo "datetime=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
           shell: bash
       - name: 'Restore Dependency Check Cache'
         id: cache-restore
