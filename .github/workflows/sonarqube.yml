@@ -11,6 +11,8 @@ on:
         required: true
       sonarqube-token:
         required: true
+      nvd-api-key:
+        required: false
     inputs:
       cache-version:
         description: 'A cache version passed from the caller workflow'
@@ -34,6 +36,7 @@ jobs:
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.nexus-password }}
       ORG_GRADLE_PROJECT_sonarqubeHostUrl: ${{ secrets.sonarqube-host }}
       ORG_GRADLE_PROJECT_sonarqubeLoginToken: ${{ secrets.sonarqube-token }}
+      ORG_GRADLE_PROJECT_nvdApiKey: ${{ secrets.nvd-api-key }}
 
     steps:
       - name: 'Getting repository name'
@@ -64,8 +67,26 @@ jobs:
           VERSION=$(./gradlew cV -q -Prelease.quiet)
           echo "Running sonar for version v$VERSION"
           echo "version=v$VERSION" >> $GITHUB_OUTPUT
+      - name: 'Get Date'
+        id: get-date
+        run: |
+          echo "datetime=$(/bin/date -u "+%Y%m%d%H")" >> $GITHUB_OUTPUT
+          shell: bash
+      - name: 'Restore Dependency Check Cache'
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          # Using datetime in cache key as OWASP database may change, without the gradle file changing
+          key: dependency-check-data-${{ runner.os }}-${{ steps.get-date.outputs.datetime }}-${{ hashFiles('**/build.gradle') }}
+          path: .gradle/dependency-check-data
       - name: 'Analyze dependencies'
         run: ./gradlew dependencyCheckAnalyze
+      - name: 'Save Dependency Check Cache'
+        uses: actions/cache/save@v4
+        id: cache-save
+        with:
+          path: .gradle/dependency-check-data
+          key: dependency-check-data-${{ runner.os }}-${{ steps.get-date.outputs.datetime }}-${{ hashFiles('**/build.gradle') }}
       - name: 'Run SonarQube'
         run: | 
           ./gradlew check sonar \
