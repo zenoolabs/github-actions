@@ -39,6 +39,9 @@ jobs:
       ORG_GRADLE_PROJECT_nvdApiKey: ${{ secrets.nvd-api-key }}
 
     steps:
+      - name: Get current date
+        id: get-current-date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: 'Getting repository name'
         run: echo "GITHUB_REPO_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
       - name: 'Print action context'
@@ -67,17 +70,12 @@ jobs:
           VERSION=$(./gradlew cV -q -Prelease.quiet)
           echo "Running sonar for version v$VERSION"
           echo "version=v$VERSION" >> $GITHUB_OUTPUT
-      - name: 'Get Date'
-        id: get-date
-        run: |
-          echo "datetime=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
-          shell: bash
       - name: 'Restore Dependency Check Cache'
         id: cache-restore
         uses: actions/cache/restore@v4
         with:
           # Using datetime in cache key as OWASP database may change, without the gradle file changing
-          key: dependency-check-data-${{ runner.os }}-${{ steps.get-date.outputs.datetime }}-${{ hashFiles('**/build.gradle') }}
+          key: dependency-check-data-${{ runner.os }}-${{ steps.get-current-date.outputs.date }}-${{ hashFiles('**/build.gradle') }}
           path: .gradle/dependency-check-data
       - name: 'Analyze dependencies'
         run: ./gradlew dependencyCheckAnalyze
@@ -86,7 +84,7 @@ jobs:
         id: cache-save
         with:
           path: .gradle/dependency-check-data
-          key: dependency-check-data-${{ runner.os }}-${{ steps.get-date.outputs.datetime }}-${{ hashFiles('**/build.gradle') }}
+          key: dependency-check-data-${{ runner.os }}-${{ steps.get-current-date.outputs.date }}-${{ hashFiles('**/build.gradle') }}
       - name: 'Run SonarQube'
         run: | 
           ./gradlew check sonar \
@@ -99,9 +97,6 @@ jobs:
         run: curl -L -O https://github.com/zenoolabs/github-actions/raw/main/bin/sonar-cnes-report.jar
       - name: 'Acquire Sonar Report'
         run: java -jar sonar-cnes-report.jar -s ${{ secrets.sonarqube-host }} -t ${{ secrets.sonarqube-token }} -p ${{ inputs.sonar-project-key }}
-      - name: Get current date
-        id: get-current-date
-        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: 'Upload Sonar report'
         uses: actions/upload-artifact@v4
         with:
