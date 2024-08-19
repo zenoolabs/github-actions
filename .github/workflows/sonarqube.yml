@@ -23,6 +23,11 @@ on:
         description: 'Key of the project in SonarQube'
         required: true
         type: string
+      full-run:
+        description: 'Set to true to run with dependency check and report download'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -39,7 +44,7 @@ jobs:
       ORG_GRADLE_PROJECT_nvdApiKey: ${{ secrets.nvd-api-key }}
 
     steps:
-      - name: Get current date
+      - name: 'Get current date'
         id: get-current-date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: 'Getting repository name'
@@ -71,15 +76,18 @@ jobs:
           echo "Running sonar for version v$VERSION"
           echo "version=v$VERSION" >> $GITHUB_OUTPUT
       - name: 'Restore Dependency Check Cache'
+        if: ${{ inputs.full-run == true }}
         id: cache-restore
         uses: actions/cache/restore@v4
         with:
-          # Using datetime in cache key as OWASP database may change, without the gradle file changing
+          # Using date in cache key as OWASP database may change, without the gradle file changing
           key: dependency-check-data-${{ runner.os }}-${{ steps.get-current-date.outputs.date }}-${{ hashFiles('**/build.gradle') }}
           path: ~/.gradle/dependency-check-data
       - name: 'Analyze dependencies'
+        if: ${{ inputs.full-run == true }}
         run: ./gradlew dependencyCheckAnalyze
       - name: 'Save Dependency Check Cache'
+        if: ${{ inputs.full-run == true }}
         uses: actions/cache/save@v4
         id: cache-save
         with:
@@ -94,15 +102,19 @@ jobs:
             -Dsonar.token=${{ secrets.sonarqube-token }} \
             -Dsonar.projectVersion=${{ steps.get-version.outputs.version }}
       - name: 'Download Sonar CNES Report tool'
+        if: ${{ inputs.full-run == true }}
         run: curl -L -O https://github.com/zenoolabs/github-actions/raw/main/bin/sonar-cnes-report.jar
       - name: 'Acquire Sonar Report'
+        if: ${{ inputs.full-run == true }}
         run: java -jar sonar-cnes-report.jar -s ${{ secrets.sonarqube-host }} -t ${{ secrets.sonarqube-token }} -p ${{ inputs.sonar-project-key }}
-      - name: 'Upload Sonar report'
+      - name: 'Attach Sonar report'
+        if: ${{ inputs.full-run == true }}
         uses: actions/upload-artifact@v4
         with:
           name: 'sonar-analysis-report'
           path: ./${{ steps.get-current-date.outputs.date }}-${{ inputs.sonar-project-key }}-analysis-report.docx
-      - name: 'Upload dependency check report'
+      - name: 'Attach dependency check report'
+        if: ${{ inputs.full-run == true }}
         uses: actions/upload-artifact@v4
         with:
           name: 'dependency-check-report'
