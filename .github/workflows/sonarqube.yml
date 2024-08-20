@@ -28,6 +28,11 @@ on:
         required: false
         type: boolean
         default: false
+      parallel-forks:
+        description: 'Maximum number of parallel forks for integration tests run'
+        required: false
+        type: number
+        default: 1
 
 jobs:
   build:
@@ -42,7 +47,7 @@ jobs:
       ORG_GRADLE_PROJECT_sonarqubeHostUrl: ${{ secrets.sonarqube-host }}
       ORG_GRADLE_PROJECT_sonarqubeLoginToken: ${{ secrets.sonarqube-token }}
       ORG_GRADLE_PROJECT_nvdApiKey: ${{ secrets.nvd-api-key }}
-
+      ORG_GRADLE_PROJECT_parallelForks: ${{ inputs.parallel-forks }}
     steps:
       - name: 'Get current date'
         id: get-current-date
