@@ -38,11 +38,16 @@ on:
       docker-folder:
         required: true
         type: string
+      runner:
+        description: "The runner to use"
+        required: false
+        type: string
+        default: "ubuntu-latest"
 
 jobs:
   deployImage:
     name: "Deploy docker image"
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.aws-access-key }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.aws-secret-key }}

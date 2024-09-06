@@ -15,10 +15,15 @@ on:
       ref:
         required: false
         type: string
+      runner:
+        description: "The runner to use"
+        required: false
+        type: string
+        default: "ubuntu-latest"
 jobs:
   buildImage:
     name: 'Build docker image'
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     env:
       AWS_REGION: ${{ inputs.region }}
     steps:
