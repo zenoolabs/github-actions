@@ -33,12 +33,17 @@ on:
         required: false
         type: number
         default: 1
+      runner:
+        description: "The runner to use"
+        required: false
+        type: string
+        default: "ubuntu-latest"
 
 jobs:
   build:
     name: 'Run static code analysis'
     timeout-minutes: 60
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     outputs:
       version: ${{ steps.get-version.outputs.version }}
     env:

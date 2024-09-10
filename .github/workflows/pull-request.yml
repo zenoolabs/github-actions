@@ -7,13 +7,19 @@ on:
         required: true
       nexus-password:
         required: true
+    inputs:
+      runner:
+        description: "The runner to use"
+        required: false
+        type: string
+        default: "ubuntu-latest"
 
 jobs:
   build:
     name: 'Build and tests'
     timeout-minutes: 30
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
 
     env:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.nexus-username }}
