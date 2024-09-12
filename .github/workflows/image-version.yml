@@ -1,0 +1,61 @@
+name: Update image version in deployment repository via PR
+
+on:
+  workflow_call:
+    secrets:
+      token:
+        required: true
+    inputs:
+      deployment-org:
+        required: true
+        type: string
+      deployment-repo:
+        required: true
+        type: string
+      image-repo:
+        required: true
+        type: string
+      image-version:
+        required: true
+        type: string
+      compose-path:
+        required: true
+        type: string
+      branch-name:
+        required: true
+        type: string
+      commit-message:
+        required: true
+        type: string
+
+jobs:
+  update-image-version-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@v4
+
+      - name: Checkout deployment repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.deployment-org }}/${{ inputs.deployment-repo }}
+          path: ${{ inputs.deployment-repo }}
+          token: ${{ secrets.token }}
+
+      - name: Update docker compose file with new version
+        run: |
+          sed -i "s|image: '.*'|image: '${{ inputs.image-repo }}:${{ inputs.image-version }}'|" ${{ inputs.deployment-repo }}/${{ inputs.compose-path }}
+
+      - name: Commit and push changes via PR
+        env:
+          GH_TOKEN: ${{ secrets.token }}
+        run: |
+          cd ${{ inputs.deployment-repo }}
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git checkout -b ${{ inputs.branch-name }}
+          git add ${{ inputs.compose-path }}
+          git commit -m "${{ inputs.commit-message }}"
+          git push origin ${{ inputs.branch-name }}
+          gh pr create --title "${{ inputs.commit-message }}" --body "${{ inputs.commit-message }}" --head ${{ inputs.branch-name }} --base main
