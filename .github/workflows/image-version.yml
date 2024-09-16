@@ -18,7 +18,7 @@ on:
       image-version:
         required: true
         type: string
-      compose-path:
+      compose-paths:
         required: true
         type: string
       branch-name:
@@ -43,9 +43,11 @@ jobs:
           path: ${{ inputs.deployment-repo }}
           token: ${{ secrets.token }}
 
-      - name: Update docker compose file with new version
+      - name: Update docker compose files with new version
         run: |
-          sed -i "s|image: '.*'|image: '${{ inputs.image-repo }}:${{ inputs.image-version }}'|" ${{ inputs.deployment-repo }}/${{ inputs.compose-path }}
+          while IFS= read -r file; do
+            sed -i "s|image: '.*'|image: '${{ inputs.image-repo }}:${{ inputs.image-version }}'|" ${{ inputs.deployment-repo }}/$file
+          done <<< "${{ inputs.compose-paths }}"          
 
       - name: Commit and push changes via PR
         env:
@@ -55,7 +57,7 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git checkout -b ${{ inputs.branch-name }}
-          git add ${{ inputs.compose-path }}
+          git add .
           git commit -m "${{ inputs.commit-message }}"
           git push origin ${{ inputs.branch-name }}
           gh pr create --title "${{ inputs.commit-message }}" --body "${{ inputs.commit-message }}" --head ${{ inputs.branch-name }} --base main
