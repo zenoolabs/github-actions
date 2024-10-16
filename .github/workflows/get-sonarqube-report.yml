@@ -27,18 +27,18 @@ jobs:
   build:
     name: 'Download static code analysis report'
     timeout-minutes: 30
-
     runs-on: ${{ inputs.runner }}
-
     steps:
       - name: 'Getting repository name'
         run: echo "GITHUB_REPO_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
+
       - name: 'Print action context'
         run: |
           echo "Repository: ${{ env.GITHUB_REPO_NAME }}"
           echo "$GITHUB_CONTEXT"
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
+
       - name: 'Setup JDK 21 with cache'
         uses: actions/setup-java@v4
         if: inputs.use-cache == true
@@ -46,19 +46,24 @@ jobs:
           distribution: 'temurin'
           java-version: 21
           cache: 'gradle'
+
       - name: 'Setup JDK 21 without cache'
         uses: actions/setup-java@v4
         if: inputs.use-cache == false
         with:
           distribution: 'temurin'
           java-version: 21
+
       - name: 'Download Sonar CNES Report tool'
         run: curl -L -O https://github.com/zenoolabs/github-actions/raw/main/bin/sonar-cnes-report.jar
+
       - name: 'Acquire Sonar Report'
         run: java -jar sonar-cnes-report.jar -s ${{ secrets.sonarqube-host }} -t ${{ secrets.sonarqube-token }} -p ${{ inputs.sonar-project-key }}
+
       - name: Get current date
         id: get-current-date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
       - name: 'Upload Sonar report'
         uses: actions/upload-artifact@v4
         with:

@@ -33,34 +33,42 @@ jobs:
     steps:
       - name: 'Getting repository name'
         run: echo "GITHUB_REPO_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
+
       - name: 'Print action context'
         run: |
           echo "Repository: ${{ env.GITHUB_REPO_NAME }}"
           echo "$GITHUB_CONTEXT"
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
+
       - name: 'Checkout'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: 'Cache gradle dependencies'
-        uses: actions/cache@v1.1.0
+        uses: actions/cache@v4
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ inputs.cache_version }}-${{ hashFiles('**/*.gradle') }}
           restore-keys: |
             ${{ runner.os }}-gradle-${{ inputs.cache_version }}-
+
       - name: 'Setup JDK 11'
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v4
         with:
           java-version: 11
+
       - name: 'Grant execute permission for gradlew'
         run: |
           chmod +x gradlew
+
       - name: 'Build'
         run: ./gradlew clean build -x test
+
       - name: 'Run tests'
         run: ./gradlew test --full-stacktrace
+
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v1.0.0
@@ -69,7 +77,9 @@ jobs:
           name: test_results
           # Directory containing files to upload
           path: /home/runner/work/${{ env.GITHUB_REPO_NAME }}/${{ env.GITHUB_REPO_NAME }}/build/reports/tests/test
+
       - name: 'Release'
         run: ./gradlew release -Prelease.disableUncommittedCheck
+
       - name: 'Publish'
         run: ./gradlew publish
