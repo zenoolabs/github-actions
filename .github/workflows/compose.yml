@@ -2,13 +2,11 @@ name: 'Compose'
 
 on:
   workflow_call:
-    secrets:
-      aws-access-key:
-        required: true
-      aws-secret-key:
-        required: true
     inputs:
       region:
+        required: true
+        type: string
+      assume_role_arn:
         required: true
         type: string
       cluster:
@@ -53,10 +51,14 @@ jobs:
     name: 'Compose'
     runs-on: ${{ inputs.runner }}
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.aws-access-key }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.aws-secret-key }}
       AWS_REGION: ${{ inputs.region }}
     steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.assume_role_arn }}
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: 'Setup ECS-CLI' #Amazon Elastic Container Service (ECS) command line interface -> https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
         uses: zenoolabs/setup-ecs-cli@v1.1.0
         with:
