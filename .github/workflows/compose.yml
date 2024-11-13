@@ -6,7 +6,7 @@ on:
       region:
         required: true
         type: string
-      assume_role_arn:
+      assume-role-arn:
         required: true
         type: string
       cluster:
