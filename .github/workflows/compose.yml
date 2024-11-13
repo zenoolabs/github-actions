@@ -56,8 +56,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ inputs.assume_role_arn }}
-          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ inputs.assume-role-arn }}
+          aws-region: ${{ inputs.region }}
 
       - name: 'Setup ECS-CLI' #Amazon Elastic Container Service (ECS) command line interface -> https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html
         uses: zenoolabs/setup-ecs-cli@v1.1.0
