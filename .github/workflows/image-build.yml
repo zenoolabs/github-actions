@@ -52,10 +52,6 @@ jobs:
           java-version: 21
           cache: 'gradle'
 
-      # - name: 'Login to Amazon ECR' #Amazong Elastic Container Registry login action -> https://github.com/aws-actions/amazon-ecr-login
-      #   id: login-ecr
-      #   uses: aws-actions/amazon-ecr-login@v1.5.0
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
