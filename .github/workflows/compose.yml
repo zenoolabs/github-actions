@@ -123,7 +123,7 @@ jobs:
           service start --cluster-config ${{ inputs.config-name }}
 
       - name: 'Switch service to use Fargate Spot'
-        if: ${{ inputs.fargate-spot == true }}
+        if: ${{ github.event.inputs.command == 'deploy' && inputs.fargate-spot == true }}
         run: |
           aws ecs update-service \
             --cluster ${{ inputs.cluster }} \
