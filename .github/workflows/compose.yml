@@ -45,6 +45,11 @@ on:
         required: false
         type: string
         default: "ubuntu-latest"
+      fargate-spot:
+        description: "Enable Fargate Spot"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   compose:
@@ -116,3 +121,14 @@ jobs:
             service stop --cluster-config ${{ inputs.config-name }}
           ecs-cli compose --project-name ${{ inputs.project-name }} \
           service start --cluster-config ${{ inputs.config-name }}
+
+      - name: 'Switch service to use Fargate Spot'
+        if: ${{ inputs.fargate-spot == true }}
+        run: |
+          aws ecs update-service \
+            --cluster ${{ inputs.cluster }} \
+            --service ${{ inputs.project-name }} \
+            --capacity-provider-strategy capacityProvider=FARGATE_SPOT,weight=1,base=1 \
+            --region ${{ inputs.region }} \
+            --force-new-deployment \
+            --no-cli-pager          
