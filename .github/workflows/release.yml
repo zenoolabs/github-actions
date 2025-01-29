@@ -12,7 +12,7 @@ on:
     inputs:
       dispatch_event:
         type: boolean
-        description: trigger deployments repository update
+        description: "trigger deployments repository update"
         default: true
       cache_version:
         description: "A cache version passed from the caller workflow"
@@ -54,7 +54,7 @@ on:
         description: "Released version"
         value: ${{ jobs.release.outputs.version }}
       sha:
-        description: "Released version"
+        description: "Released version commit sha"
         value: ${{ jobs.release.outputs.sha }}
 
 jobs:
@@ -65,13 +65,17 @@ jobs:
     permissions:
       id-token: write
       contents: write
+
+    # Expose outputs from this job
     outputs:
       version: ${{ steps.get-version.outputs.version }}
       sha: ${{ steps.get-sha.outputs.sha }}
+
     env:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.nexus-username }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.nexus-password }}
       AWS_REGION: eu-west-1
+
     steps:
       - name: "Getting repository name"
         run: echo "GITHUB_REPO_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
@@ -88,8 +92,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      # NOTE: Must use expression syntax for 'if'
       - name: Configure AWS credentials
-        if: inputs.docker_image == true
+        if: ${{ inputs.docker_image == true }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_ECR_ASSUME_ROLE }}
@@ -97,7 +102,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        if: inputs.docker_image == true
+        if: ${{ inputs.docker_image == true }}
         uses: aws-actions/amazon-ecr-login@v2
         with:
           registries: "${{ vars.AWS_ECR_ACCOUNT }}"
@@ -113,16 +118,15 @@ jobs:
         run: ./gradlew test --full-stacktrace
 
       - name: "Upload test results"
-        if: failure()
+        if: ${{ failure() }}
         uses: actions/upload-artifact@v4
         with:
-          # Artifact name
           name: test_results
-          # Directory containing files to upload
           path: /home/runner/work/${{ env.GITHUB_REPO_NAME }}/${{ env.GITHUB_REPO_NAME }}/build/reports/tests/test
 
       - name: "Create release"
-        run: ./gradlew createRelease -Prelease.forceVersion=${{github.event.inputs.force_version}}
+        # Reusable workflows should access *inputs*, not github.event.inputs
+        run: ./gradlew createRelease -Prelease.forceVersion=${{ inputs.force_version }}
 
       - name: "Get version"
         id: get-version
@@ -132,11 +136,11 @@ jobs:
           echo "version=v$VERSION" >> $GITHUB_OUTPUT
 
       - name: "Build and publish Docker image"
-        if: inputs.docker_image == true
+        if: ${{ inputs.docker_image == true }}
         run: ./gradlew jib -PgithubRun
 
       - name: "Build and publish jar"
-        if: inputs.docker_image == false
+        if: ${{ not inputs.docker_image == false }}
         run: ./gradlew publish
 
       - name: "Push release"
@@ -146,20 +150,19 @@ jobs:
         id: get-sha
         run: |
           sha_head=$(git rev-parse HEAD)
-          echo $sha_head
           echo "sha=$sha_head" >> $GITHUB_OUTPUT
 
       - name: "Create summary"
-        if: inputs.docker_image == true
+        if: ${{ inputs.docker_image == true }}
         run: |
           echo "Released version ${{ steps.get-version.outputs.version }} and published to ${{ inputs.aws_region }}" >> $GITHUB_STEP_SUMMARY
 
       - name: "Add sha to summary"
         run: |
-          echo "Released version ${{ steps.get-version.outputs.version }} commit has this sha: ${{ steps.get-sha.outputs.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "Released version ${{ steps.get-version.outputs.version }} commit has sha: ${{ steps.get-sha.outputs.sha }}" >> $GITHUB_STEP_SUMMARY
 
-      - name: dispatch event to the deployments repository
-        if: inputs.dispatch_event == true
+      - name: "Dispatch event to the deployments repository"
+        if: ${{ inputs.dispatch_event == true }}
         run: |
           curl -X POST \
             -H "Accept: application/vnd.github.v3+json" \
