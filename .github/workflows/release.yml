@@ -12,7 +12,7 @@ on:
     inputs:
       dispatch_event:
         type: boolean
-        description: "trigger deployments repository update"
+        description: "Trigger deployments repository update"
         default: true
       cache_version:
         description: "A cache version passed from the caller workflow"
@@ -20,7 +20,7 @@ on:
         type: string
         default: "v1"
       docker_image:
-        description: "Set true if you want to publish Docker image, set false if you want to publish jar"
+        description: "Set true to publish Docker image; false to publish JAR"
         type: boolean
         required: true
       aws_region:
@@ -37,7 +37,7 @@ on:
         type: string
         default: "ubuntu-latest"
       service_name:
-        description: "name of the service that's being released"
+        description: "Name of the service being released"
         required: true
         type: string
       image_repo:
@@ -45,7 +45,7 @@ on:
         required: true
         type: string
       deployment_repo:
-        description: "repository where hub deployments are triggered from"
+        description: "Repository where hub deployments are triggered from"
         required: false
         type: string
         default: "zenoolabs/hub-studio-deployments"
@@ -54,7 +54,7 @@ on:
         description: "Released version"
         value: ${{ jobs.release.outputs.version }}
       sha:
-        description: "Released version commit sha"
+        description: "Commit SHA of the released version"
         value: ${{ jobs.release.outputs.sha }}
 
 jobs:
@@ -65,12 +65,9 @@ jobs:
     permissions:
       id-token: write
       contents: write
-
-    # Expose outputs from this job
     outputs:
       version: ${{ steps.get-version.outputs.version }}
       sha: ${{ steps.get-sha.outputs.sha }}
-
     env:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.nexus-username }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.nexus-password }}
@@ -92,22 +89,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      # NOTE: Must use expression syntax for 'if'
-      - name: Configure AWS credentials
-        if: ${{ inputs.docker_image == true }}
+      - name: "Configure AWS credentials"
+        if: ${{ inputs.docker_image }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_ECR_ASSUME_ROLE }}
           aws-region: ${{ vars.AWS_HOME_REGION }}
 
-      - name: Login to Amazon ECR
+      - name: "Login to Amazon ECR"
         id: login-ecr
-        if: ${{ inputs.docker_image == true }}
+        if: ${{ inputs.docker_image }}
         uses: aws-actions/amazon-ecr-login@v2
         with:
           registries: "${{ vars.AWS_ECR_ACCOUNT }}"
 
-      - name: 'Setup JDK 21'
+      - name: "Setup JDK 21"
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -125,7 +121,6 @@ jobs:
           path: /home/runner/work/${{ env.GITHUB_REPO_NAME }}/${{ env.GITHUB_REPO_NAME }}/build/reports/tests/test
 
       - name: "Create release"
-        # Reusable workflows should access *inputs*, not github.event.inputs
         run: ./gradlew createRelease -Prelease.forceVersion=${{ inputs.force_version }}
 
       - name: "Get version"
@@ -136,11 +131,11 @@ jobs:
           echo "version=v$VERSION" >> $GITHUB_OUTPUT
 
       - name: "Build and publish Docker image"
-        if: ${{ inputs.docker_image == true }}
+        if: ${{ inputs.docker_image }}
         run: ./gradlew jib -PgithubRun
 
       - name: "Build and publish jar"
-        if: ${{ inputs.docker_image == false }}
+        if: ${{ !inputs.docker_image }}
         run: ./gradlew publish
 
       - name: "Push release"
@@ -153,16 +148,16 @@ jobs:
           echo "sha=$sha_head" >> $GITHUB_OUTPUT
 
       - name: "Create summary"
-        if: ${{ inputs.docker_image == true }}
+        if: ${{ inputs.docker_image }}
         run: |
           echo "Released version ${{ steps.get-version.outputs.version }} and published to ${{ inputs.aws_region }}" >> $GITHUB_STEP_SUMMARY
 
       - name: "Add sha to summary"
         run: |
-          echo "Released version ${{ steps.get-version.outputs.version }} commit has sha: ${{ steps.get-sha.outputs.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "Released version ${{ steps.get-version.outputs.version }} commit sha: ${{ steps.get-sha.outputs.sha }}" >> $GITHUB_STEP_SUMMARY
 
       - name: "Dispatch event to the deployments repository"
-        if: ${{ inputs.dispatch_event == true }}
+        if: ${{ inputs.dispatch_event }}
         run: |
           curl -X POST \
             -H "Accept: application/vnd.github.v3+json" \
