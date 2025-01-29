@@ -140,7 +140,7 @@ jobs:
         run: ./gradlew jib -PgithubRun
 
       - name: "Build and publish jar"
-        if: ${{ not inputs.docker_image == false }}
+        if: ${{ inputs.docker_image == false }}
         run: ./gradlew publish
 
       - name: "Push release"
