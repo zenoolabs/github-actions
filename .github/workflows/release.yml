@@ -7,6 +7,8 @@ on:
         required: true
       nexus-password:
         required: true
+      actions-access-token:
+        required: true
     inputs:
       dispatch_event:
         type: boolean
@@ -161,6 +163,6 @@ jobs:
         run: |
           curl -X POST \
             -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token ${{ secrets.ACTIONS_ACCESS_TOKEN }}" \
+            -H "Authorization: token ${{ secrets.actions-access-token }}" \
             https://api.github.com/repos/${{ inputs.deployment_repo }}/dispatches \
             -d '{"event_type":"released", "client_payload": {"service_name": "${{ inputs.service_name }}", "image_repo": "${{ inputs.image_repo }}", "image_version": "${{ steps.get-version.outputs.version }}"}}'
