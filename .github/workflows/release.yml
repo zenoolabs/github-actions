@@ -12,7 +12,7 @@ on:
     inputs:
       dispatch_event:
         type: boolean
-        description: "Trigger deployments repository update"
+        description: trigger deployments repository update
         default: true
       cache_version:
         description: "A cache version passed from the caller workflow"
@@ -20,7 +20,7 @@ on:
         type: string
         default: "v1"
       docker_image:
-        description: "Set true to publish Docker image; false to publish JAR"
+        description: "Set true if you want to publish Docker image, set false if you want to publish jar"
         type: boolean
         required: true
       aws_region:
@@ -37,7 +37,7 @@ on:
         type: string
         default: "ubuntu-latest"
       service_name:
-        description: "Name of the service being released"
+        description: "name of the service that's being released"
         required: true
         type: string
       image_repo:
@@ -45,7 +45,7 @@ on:
         required: true
         type: string
       deployment_repo:
-        description: "Repository where hub deployments are triggered from"
+        description: "repository where hub deployments are triggered from"
         required: false
         type: string
         default: "zenoolabs/hub-studio-deployments"
@@ -54,7 +54,7 @@ on:
         description: "Released version"
         value: ${{ jobs.release.outputs.version }}
       sha:
-        description: "Commit SHA of the released version"
+        description: "Released version"
         value: ${{ jobs.release.outputs.sha }}
 
 jobs:
@@ -72,7 +72,6 @@ jobs:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.nexus-username }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.nexus-password }}
       AWS_REGION: eu-west-1
-
     steps:
       - name: "Getting repository name"
         run: echo "GITHUB_REPO_NAME=${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
@@ -89,21 +88,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: "Configure AWS credentials"
-        if: ${{ inputs.docker_image }}
+      - name: Configure AWS credentials
+        if: inputs.docker_image == true
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_ECR_ASSUME_ROLE }}
           aws-region: ${{ vars.AWS_HOME_REGION }}
 
-      - name: "Login to Amazon ECR"
+      - name: Login to Amazon ECR
         id: login-ecr
-        if: ${{ inputs.docker_image }}
+        if: inputs.docker_image == true
         uses: aws-actions/amazon-ecr-login@v2
         with:
           registries: "${{ vars.AWS_ECR_ACCOUNT }}"
 
-      - name: "Setup JDK 21"
+      - name: 'Setup JDK 21'
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -114,14 +113,16 @@ jobs:
         run: ./gradlew test --full-stacktrace
 
       - name: "Upload test results"
-        if: ${{ failure() }}
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
+          # Artifact name
           name: test_results
+          # Directory containing files to upload
           path: /home/runner/work/${{ env.GITHUB_REPO_NAME }}/${{ env.GITHUB_REPO_NAME }}/build/reports/tests/test
 
       - name: "Create release"
-        run: ./gradlew createRelease -Prelease.forceVersion=${{ inputs.force_version }}
+        run: ./gradlew createRelease -Prelease.forceVersion=${{github.event.inputs.force_version}}
 
       - name: "Get version"
         id: get-version
@@ -131,11 +132,11 @@ jobs:
           echo "version=v$VERSION" >> $GITHUB_OUTPUT
 
       - name: "Build and publish Docker image"
-        if: ${{ inputs.docker_image }}
+        if: inputs.docker_image == true
         run: ./gradlew jib -PgithubRun
 
       - name: "Build and publish jar"
-        if: ${{ !inputs.docker_image }}
+        if: inputs.docker_image == false
         run: ./gradlew publish
 
       - name: "Push release"
@@ -145,19 +146,20 @@ jobs:
         id: get-sha
         run: |
           sha_head=$(git rev-parse HEAD)
+          echo $sha_head
           echo "sha=$sha_head" >> $GITHUB_OUTPUT
 
       - name: "Create summary"
-        if: ${{ inputs.docker_image }}
+        if: inputs.docker_image == true
         run: |
           echo "Released version ${{ steps.get-version.outputs.version }} and published to ${{ inputs.aws_region }}" >> $GITHUB_STEP_SUMMARY
 
       - name: "Add sha to summary"
         run: |
-          echo "Released version ${{ steps.get-version.outputs.version }} commit sha: ${{ steps.get-sha.outputs.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "Released version ${{ steps.get-version.outputs.version }} commit has this sha: ${{ steps.get-sha.outputs.sha }}" >> $GITHUB_STEP_SUMMARY
 
-      - name: "Dispatch event to the deployments repository"
-        if: ${{ inputs.dispatch_event }}
+      - name: dispatch event to the deployments repository
+        if: inputs.dispatch_event == true
         run: |
           curl -X POST \
             -H "Accept: application/vnd.github.v3+json" \
