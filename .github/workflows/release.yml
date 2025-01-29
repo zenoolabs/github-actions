@@ -44,7 +44,7 @@ on:
         description: "URL of the image in the container registry"
         required: true
         type: string
-      deployments_repo:
+      deployment_repo:
         description: "repository where hub deployments are triggered from"
         required: false
         type: string
