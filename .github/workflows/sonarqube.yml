@@ -125,11 +125,11 @@ jobs:
 
       - name: 'Download Sonar CNES Report tool'
         if: ${{ inputs.full-run == true }}
-        run: curl -L -O https://github.com/zenoolabs/github-actions/raw/main/bin/sonar-cnes-report.jar
+        run: curl -L -O https://github.com/zenoolabs/github-actions/raw/main/bin/sonar-cnes-report-5.0.1-zenoo.jar
 
       - name: 'Acquire Sonar Report'
         if: ${{ inputs.full-run == true }}
-        run: java -jar sonar-cnes-report.jar -s ${{ secrets.sonarqube-host }} -t ${{ secrets.sonarqube-token }} -p ${{ inputs.sonar-project-key }}
+        run: java -jar sonar-cnes-report-5.0.1-zenoo.jar -s ${{ secrets.sonarqube-host }} -t ${{ secrets.sonarqube-token }} -p ${{ inputs.sonar-project-key }}
 
       - name: 'Attach Sonar report'
         if: ${{ inputs.full-run == true }}
