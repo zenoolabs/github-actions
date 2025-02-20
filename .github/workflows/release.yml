@@ -7,7 +7,13 @@ on:
         required: true
       nexus-password:
         required: true
+      actions-access-token:
+        required: true
     inputs:
+      dispatch_event:
+        type: boolean
+        description: trigger deployments repository update
+        default: false
       cache_version:
         description: "A cache version passed from the caller workflow"
         required: false
@@ -30,6 +36,19 @@ on:
         required: false
         type: string
         default: "ubuntu-latest"
+      service_name:
+        description: "name of the service that's being released"
+        required: true
+        type: string
+      image_repo:
+        description: "URL of the image in the container registry"
+        required: true
+        type: string
+      deployment_repo:
+        description: "repository where hub deployments are triggered from"
+        required: false
+        type: string
+        default: "zenoolabs/hub-studio-deployments"
     outputs:
       version:
         description: "Released version"
@@ -138,3 +157,12 @@ jobs:
       - name: "Add sha to summary"
         run: |
           echo "Released version ${{ steps.get-version.outputs.version }} commit has this sha: ${{ steps.get-sha.outputs.sha }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: dispatch event to the deployments repository
+        if: inputs.dispatch_event == true
+        run: |
+          curl -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.actions-access-token }}" \
+            https://api.github.com/repos/${{ inputs.deployment_repo }}/dispatches \
+            -d '{"event_type":"released", "client_payload": {"service_name": "${{ inputs.service_name }}", "image_repo": "${{ inputs.image_repo }}", "image_version": "${{ steps.get-version.outputs.version }}"}}'
