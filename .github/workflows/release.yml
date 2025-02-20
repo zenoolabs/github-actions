@@ -13,7 +13,7 @@ on:
       dispatch_event:
         type: boolean
         description: trigger deployments repository update
-        default: true
+        default: false
       cache_version:
         description: "A cache version passed from the caller workflow"
         required: false
