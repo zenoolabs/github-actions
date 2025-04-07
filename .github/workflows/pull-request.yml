@@ -13,6 +13,11 @@ on:
         required: false
         type: string
         default: "ubuntu-latest"
+      region:
+        description: "AWS region to set"
+        required: false
+        type: string
+        default: "eu-west-1"
 
 jobs:
   build:
@@ -24,6 +29,7 @@ jobs:
     env:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.nexus-username }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.nexus-password }}
+      AWS_REGION: ${{ inputs.region }}
 
     steps:
       - name: 'Getting repository name'
