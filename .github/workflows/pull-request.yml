@@ -18,6 +18,10 @@ on:
         required: false
         type: string
         default: "eu-west-1"
+      role_to_assume:
+        description: "AWS role to assume for the build"
+        required: false
+        type: string
 
 jobs:
   build:
@@ -44,6 +48,13 @@ jobs:
 
       - name: 'Checkout'
         uses: actions/checkout@v4
+
+      - name: 'Configure AWS credentials'
+        if: inputs.role_to_assume != ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.role_to_assume }}
+          aws-region: ${{ inputs.region }}
 
       - name: 'Setup JDK 21'
         uses: actions/setup-java@v4
