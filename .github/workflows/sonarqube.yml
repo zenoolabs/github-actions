@@ -38,6 +38,11 @@ on:
         required: false
         type: string
         default: "ubuntu-latest"
+      enable-dependency-cache:
+        description: 'Enable dependency check caching'
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   build:
@@ -94,7 +99,7 @@ jobs:
           echo "version=v$VERSION" >> $GITHUB_OUTPUT
 
       - name: 'Restore Dependency Check Cache'
-        if: ${{ inputs.full-run == true }}
+        if: ${{ inputs.full-run == true && inputs.enable-dependency-cache == true }}
         id: cache-restore
         uses: actions/cache/restore@v4
         with:
@@ -107,7 +112,7 @@ jobs:
         run: ./gradlew dependencyCheckAnalyze
 
       - name: 'Save Dependency Check Cache'
-        if: ${{ inputs.full-run == true }}
+        if: ${{ inputs.full-run == true && inputs.enable-dependency-cache == true }}
         uses: actions/cache/save@v4
         id: cache-save
         with:
