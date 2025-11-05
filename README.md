@@ -1,6 +1,13 @@
 # Github Actions
 Repository to store [reusable Github Actions](https://docs.github.com/en/actions/using-workflows/reusing-workflows).
 
+## Table of Contents
+- [Pull Request Build](#pull-request-build)
+  - [Optional: Integration Tests](#optional-integration-tests)
+- [Release](#release)
+- [Compose](#compose)
+- [SonarQube Static Code Analysis Report](#sonarqube-static-code-analysis-report)
+
 ## Pull Request Build
 Supposed to be run on pull-request to test if project will build.
 To add this action to your repo create `.github/workflows/pull-request.yml` file with following content:
