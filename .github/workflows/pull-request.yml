@@ -107,7 +107,7 @@ jobs:
           echo "Running integration tests with patterns: $TEST_PATTERNS"
           echo "Parallel forks: ${{ inputs.max-parallel-forks }}"
 
-          eval "./gradlew clean build integrationTest $TEST_ARGS -PmaxParallelForks=${{ inputs.max-parallel-forks }} --info"
+          eval "./gradlew clean build integrationTest $TEST_ARGS -PmaxParallelForks=${{ inputs.max-parallel-forks }}"
 
       - name: 'Upload integration test results'
         if: inputs.enable-integration-tests == true && failure()
