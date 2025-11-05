@@ -1,6 +1,13 @@
 # Github Actions
 Repository to store [reusable Github Actions](https://docs.github.com/en/actions/using-workflows/reusing-workflows).
 
+## Table of Contents
+- [Pull Request Build](#pull-request-build)
+  - [Optional: Integration Tests](#optional-integration-tests)
+- [Release](#release)
+- [Compose](#compose)
+- [SonarQube Static Code Analysis Report](#sonarqube-static-code-analysis-report)
+
 ## Pull Request Build
 Supposed to be run on pull-request to test if project will build.
 To add this action to your repo create `.github/workflows/pull-request.yml` file with following content:
@@ -26,6 +33,32 @@ jobs:
       nexus-username: ${{ secrets.NEXUS_USERNAME }}
       nexus-password: ${{ secrets.NEXUS_PASSWORD }}
 ```
+
+### Optional: Integration Tests
+
+The pull request workflow supports optional integration testing with configurable test patterns and parallel execution.
+
+**Example with integration tests:**
+```yaml
+jobs:
+  build:
+    name: 'Zenoo Build'
+    uses: zenoolabs/github-actions/.github/workflows/pull-request.yml@v4
+    secrets:
+      nexus-username: ${{ secrets.NEXUS_USERNAME }}
+      nexus-password: ${{ secrets.NEXUS_PASSWORD }}
+    with:
+      enable-integration-tests: true
+      integration-test-patterns: '*ClientAWorkflowsSpec* *ClientBWorkflowsSpec* *ClientCWorkflowsSpec*'
+      max-parallel-forks: 3
+```
+
+**Available inputs:**
+- `enable-integration-tests` (boolean, default: false) - Enable integration test execution
+- `integration-test-patterns` (string) - Space-separated test patterns
+- `max-parallel-forks` (number, default: 1) - Maximum parallel forks for test execution
+
+**Note:** Your Gradle project must have an `integrationTest` task and support the `-PmaxParallelForks` property.
 
 ## Release
 Supposed to be run on push to master branch to tag new version and upload it to Nexus or Docker repository depending on

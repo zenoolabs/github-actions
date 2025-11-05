@@ -22,6 +22,20 @@ on:
         description: "AWS role to assume for the build"
         required: false
         type: string
+      enable-integration-tests:
+        description: "Enable integration tests"
+        required: false
+        type: boolean
+        default: false
+      integration-test-patterns:
+        description: "Space-separated integration test patterns (e.g., '*ClientAWorkflowsSpec* *ClientBWorkflowsSpec*')"
+        required: false
+        type: string
+      max-parallel-forks:
+        description: "Maximum number of parallel forks for integration tests"
+        required: false
+        type: number
+        default: 1
 
 jobs:
   build:
@@ -66,14 +80,36 @@ jobs:
       - name: 'Grant execute permission for gradlew'
         run: chmod +x gradlew
 
-      - name: 'Run build and tests'
-        run: ./gradlew clean build --full-stacktrace
+      - name: 'Run build with unit tests'
+        if: inputs.enable-integration-tests == false
+        run: ./gradlew clean build
 
-      - name: 'Upload test results'
-        if: failure()
+      - name: 'Run build with unit and integration tests'
+        if: inputs.enable-integration-tests == true
+        run: |
+          TEST_PATTERNS="${{ inputs.integration-test-patterns }}"
+          TEST_ARGS=""
+
+          if [ -n "$TEST_PATTERNS" ]; then
+            for pattern in $TEST_PATTERNS; do
+              TEST_ARGS="$TEST_ARGS --tests \"$pattern\""
+            done
+          fi
+
+          echo "Running integration tests with patterns: $TEST_PATTERNS"
+          echo "Parallel forks: ${{ inputs.max-parallel-forks }}"
+
+          eval "./gradlew clean build integrationTest $TEST_ARGS -PmaxParallelForks=${{ inputs.max-parallel-forks }}"
+
+      - name: 'Upload unit test results'
         uses: actions/upload-artifact@v4
         with:
-          # Artifact name
-          name: test_results
-          # Directory containing files to upload
+          name: unit_test_results
           path: ./build/reports/tests/test
+
+      - name: 'Upload integration test results'
+        if: inputs.enable-integration-tests == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration_test_results
+          path: ./build/reports/tests/integrationTest
