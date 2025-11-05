@@ -80,19 +80,11 @@ jobs:
       - name: 'Grant execute permission for gradlew'
         run: chmod +x gradlew
 
-      - name: 'Run build and tests'
-        run: ./gradlew clean build --full-stacktrace
+      - name: 'Run build with unit tests'
+        if: inputs.enable-integration-tests == false
+        run: ./gradlew clean build
 
-      - name: 'Upload test results'
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          # Artifact name
-          name: test_results
-          # Directory containing files to upload
-          path: ./build/reports/tests/test
-
-      - name: 'Run integration tests'
+      - name: 'Run build with unit and integration tests'
         if: inputs.enable-integration-tests == true
         run: |
           TEST_PATTERNS="${{ inputs.integration-test-patterns }}"
@@ -109,8 +101,14 @@ jobs:
 
           eval "./gradlew clean build integrationTest $TEST_ARGS -PmaxParallelForks=${{ inputs.max-parallel-forks }}"
 
+      - name: 'Upload unit test results'
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit_test_results
+          path: ./build/reports/tests/test
+
       - name: 'Upload integration test results'
-        if: inputs.enable-integration-tests == true && failure()
+        if: inputs.enable-integration-tests == true
         uses: actions/upload-artifact@v4
         with:
           name: integration_test_results
