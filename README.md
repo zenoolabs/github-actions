@@ -27,6 +27,32 @@ jobs:
       nexus-password: ${{ secrets.NEXUS_PASSWORD }}
 ```
 
+### Optional: Integration Tests
+
+The pull request workflow supports optional integration testing with configurable test patterns and parallel execution.
+
+**Example with integration tests:**
+```yaml
+jobs:
+  build:
+    name: 'Zenoo Build'
+    uses: zenoolabs/github-actions/.github/workflows/pull-request.yml@v4
+    secrets:
+      nexus-username: ${{ secrets.NEXUS_USERNAME }}
+      nexus-password: ${{ secrets.NEXUS_PASSWORD }}
+    with:
+      enable-integration-tests: true
+      integration-test-patterns: '*ClientAWorkflowsSpec* *ClientBWorkflowsSpec* *ClientCWorkflowsSpec*'
+      max-parallel-forks: 3
+```
+
+**Available inputs:**
+- `enable-integration-tests` (boolean, default: false) - Enable integration test execution
+- `integration-test-patterns` (string) - Space-separated test patterns
+- `max-parallel-forks` (number, default: 1) - Maximum parallel forks for test execution
+
+**Note:** Your Gradle project must have an `integrationTest` task and support the `-PmaxParallelForks` property.
+
 ## Release
 Supposed to be run on push to master branch to tag new version and upload it to Nexus or Docker repository depending on
 the value of following input: `docker_image`.
