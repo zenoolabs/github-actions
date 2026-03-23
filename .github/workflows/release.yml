@@ -9,6 +9,8 @@ on:
         required: true
       actions-access-token:
         required: true
+      localstack-token:
+        required: true
     inputs:
       dispatch_event:
         type: boolean
@@ -71,6 +73,7 @@ jobs:
     env:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.nexus-username }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.nexus-password }}
+      ORG_GRADLE_PROJECT_localstackToken: ${{ secrets.localstack-token }}
       AWS_REGION: eu-west-1
     steps:
       - name: "Getting repository name"

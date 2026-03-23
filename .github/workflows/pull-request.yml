@@ -7,6 +7,8 @@ on:
         required: true
       nexus-password:
         required: true
+      localstack-token:
+        required: true
     inputs:
       runner:
         description: "The runner to use"
@@ -47,6 +49,7 @@ jobs:
     env:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.nexus-username }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.nexus-password }}
+      ORG_GRADLE_PROJECT_localstackToken: ${{ secrets.localstack-token }}
       AWS_REGION: ${{ inputs.region }}
 
     steps:
