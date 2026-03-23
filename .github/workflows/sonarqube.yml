@@ -13,6 +13,8 @@ on:
         required: true
       nvd-api-key:
         required: false
+      localstack-token:
+        required: true
     inputs:
       cache-version:
         description: 'A cache version passed from the caller workflow'
@@ -54,6 +56,7 @@ jobs:
     env:
       ORG_GRADLE_PROJECT_nexusUsername: ${{ secrets.nexus-username }}
       ORG_GRADLE_PROJECT_nexusPassword: ${{ secrets.nexus-password }}
+      ORG_GRADLE_PROJECT_localstackToken: ${{ secrets.localstack-token }}
       ORG_GRADLE_PROJECT_sonarqubeHostUrl: ${{ secrets.sonarqube-host }}
       ORG_GRADLE_PROJECT_sonarqubeLoginToken: ${{ secrets.sonarqube-token }}
       ORG_GRADLE_PROJECT_nvdApiKey: ${{ secrets.nvd-api-key }}
