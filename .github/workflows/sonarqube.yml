@@ -108,6 +108,9 @@ jobs:
         with:
           # Using date in cache key as OWASP database may change, without the gradle file changing
           key: dependency-check-data-${{ runner.os }}-${{ steps.get-current-date.outputs.date }}-${{ hashFiles('**/build.gradle') }}
+          restore-keys: |
+            dependency-check-data-${{ runner.os }}-${{ steps.get-current-date.outputs.date }}-
+            dependency-check-data-${{ runner.os }}-
           path: ~/.gradle/dependency-check-data
 
       - name: 'Analyze dependencies'
