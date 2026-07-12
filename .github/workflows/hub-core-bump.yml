@@ -4,13 +4,16 @@ name: Hub core bump
 # instance's build.gradle to a newly released hub core version.
 #
 # Called by a hub instance on `repository_dispatch: hub-released`, which the hub
-# repo's Hub Release workflow fires for every instance listed in its committed
-# .github/instance-subscribers.json.
+# repo's Hub Release workflow fires for every instance in its HUB_INSTANCE_SUBSCRIBERS
+# variable.
 #
 # Rolling PR: all bumps reuse a single branch (default `chore/hub-core-bump`), so an
 # instance has at most one open bump PR at a time, always retargeted to the newest
 # version. It never merges — the instance's own PR checks decide whether the new hub
 # core is safe for that instance.
+#
+# The bump itself lives in scripts/bump_hub_core.py and the PR body in
+# templates/hub-core-bump-pr.md, both in this repo.
 
 on:
   workflow_call:
@@ -29,7 +32,7 @@ on:
         type: string
         default: chore/hub-core-bump
       base:
-        description: "Branch to open the PR against."
+        description: "Branch to open the PR against. Instances differ: design-studio uses master, minimal/lseg use main."
         required: false
         type: string
         default: master
@@ -42,52 +45,29 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - name: Checkout base
+      - name: Checkout instance
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.base }}
           token: ${{ secrets.actions-access-token }}
 
+      - name: Checkout shared script and template
+        # A reusable workflow cannot read files from the calling repo's checkout, so
+        # the bump script and PR template are fetched from this repo into a subdir.
+        uses: actions/checkout@v4
+        with:
+          repository: zenoolabs/github-actions
+          ref: main
+          path: .hub-core-bump
+          sparse-checkout: |
+            scripts/bump_hub_core.py
+            templates/hub-core-bump-pr.md
+
       - name: Bump hubBackendVersion
         id: bump
+        run: python3 .hub-core-bump/scripts/bump_hub_core.py --version "$VERSION"
         env:
           VERSION: ${{ inputs.version }}
-        run: |
-          set -euo pipefail
-
-          # `version` originates from a repository_dispatch client_payload, which any
-          # actor able to dispatch on this repo controls. It is interpolated into sed,
-          # a branch name and a commit message, so constrain it to a plain version
-          # literal before it is used anywhere.
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::refusing to bump: '$VERSION' is not a bare X.Y.Z version"
-            exit 1
-          fi
-
-          if [[ ! -f build.gradle ]]; then
-            echo "::error::build.gradle not found"
-            exit 1
-          fi
-
-          CURRENT=$(grep -oE "hubBackendVersion *= *'[^']+'" build.gradle | head -1 | sed -E "s/.*'([^']+)'.*/\1/")
-          if [[ -z "$CURRENT" ]]; then
-            echo "::error::could not find hubBackendVersion in build.gradle"
-            exit 1
-          fi
-          echo "Current: $CURRENT -> target: $VERSION"
-
-          if [[ "$CURRENT" == "$VERSION" ]]; then
-            echo "Already on $VERSION; nothing to do."
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Replace only the version literal, preserving the existing indentation/quoting.
-          sed -i -E "s/(hubBackendVersion *= *')[^']+(')/\1${VERSION}\2/" build.gradle
-
-          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
-          echo "changed=true" >> "$GITHUB_OUTPUT"
-          git --no-pager diff -- build.gradle
 
       - name: Push bump branch
         if: steps.bump.outputs.changed == 'true'
@@ -105,30 +85,35 @@ jobs:
           # released version rather than accumulating one stale PR per release.
           git push --force origin "$BRANCH"
 
+      - name: Render PR body
+        if: steps.bump.outputs.changed == 'true'
+        env:
+          VERSION: ${{ inputs.version }}
+          PREVIOUS: ${{ steps.bump.outputs.previous }}
+        run: |
+          set -euo pipefail
+          # Rendered outside the working tree so it never shows up as an untracked
+          # file in the instance repo.
+          sed -e "s|{{VERSION}}|${VERSION}|g" \
+              -e "s|{{PREVIOUS}}|${PREVIOUS}|g" \
+              .hub-core-bump/templates/hub-core-bump-pr.md > "${RUNNER_TEMP}/pr-body.md"
+          cat "${RUNNER_TEMP}/pr-body.md"
+
       - name: Open or update PR
         if: steps.bump.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ secrets.actions-access-token }}
           VERSION: ${{ inputs.version }}
-          CURRENT: ${{ steps.bump.outputs.current }}
           BRANCH: ${{ inputs.branch }}
           BASE: ${{ inputs.base }}
         run: |
           set -euo pipefail
           TITLE="chore(deps): bump hub core to ${VERSION}"
-          BODY=$(printf '%s\n' \
-            "Automated bump of \`hubBackendVersion\`: \`${CURRENT}\` → \`${VERSION}\`." \
-            "" \
-            "Triggered by a hub core release. This instance is subscribed in \`hub/.github/instance-subscribers.json\`." \
-            "" \
-            "This PR is **not** auto-merged: the checks on it tell you whether this hub core version is safe for this instance. If they fail, the new hub core broke something here." \
-            "" \
-            "This is a rolling PR — a later hub core release force-updates this same branch rather than opening another PR.")
 
           EXISTING=$(gh pr list --head "$BRANCH" --base "$BASE" --state open --json number --jq '.[0].number // empty')
           if [[ -n "$EXISTING" ]]; then
-            echo "Updating existing PR #$EXISTING"
-            gh pr edit "$EXISTING" --title "$TITLE" --body "$BODY"
+            gh pr edit "$EXISTING" --title "$TITLE" --body-file "${RUNNER_TEMP}/pr-body.md"
+            echo "Updated PR #${EXISTING}"
           else
-            gh pr create --base "$BASE" --head "$BRANCH" --title "$TITLE" --body "$BODY"
+            gh pr create --base "$BASE" --head "$BRANCH" --title "$TITLE" --body-file "${RUNNER_TEMP}/pr-body.md"
           fi
