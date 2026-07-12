@@ -1,0 +1,119 @@
+name: Hub core bump
+
+# Reusable workflow: opens (or updates) a PR bumping `hubBackendVersion` in a hub
+# instance's build.gradle to a newly released hub core version.
+#
+# Called by a hub instance on `repository_dispatch: hub-released`, which the hub
+# repo's Hub Release workflow fires for every instance in its HUB_INSTANCE_SUBSCRIBERS
+# variable.
+#
+# Rolling PR: all bumps reuse a single branch (default `chore/hub-core-bump`), so an
+# instance has at most one open bump PR at a time, always retargeted to the newest
+# version. It never merges — the instance's own PR checks decide whether the new hub
+# core is safe for that instance.
+#
+# The bump itself lives in scripts/bump_hub_core.py and the PR body in
+# templates/hub-core-bump-pr.md, both in this repo.
+
+on:
+  workflow_call:
+    secrets:
+      actions-access-token:
+        description: Token used to push the bump branch and open the PR.
+        required: true
+    inputs:
+      version:
+        description: "Hub core version to bump to, e.g. 3.176.0 (from the dispatch client_payload)."
+        required: true
+        type: string
+      branch:
+        description: "Rolling branch used for the bump PR."
+        required: false
+        type: string
+        default: chore/hub-core-bump
+      base:
+        description: "Branch to open the PR against. Instances differ: design-studio uses master, minimal/lseg use main."
+        required: false
+        type: string
+        default: master
+
+jobs:
+  bump:
+    name: "Bump hub core to ${{ inputs.version }}"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout instance
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.base }}
+          token: ${{ secrets.actions-access-token }}
+
+      - name: Checkout shared script and template
+        # A reusable workflow cannot read files from the calling repo's checkout, so
+        # the bump script and PR template are fetched from this repo into a subdir.
+        uses: actions/checkout@v4
+        with:
+          repository: zenoolabs/github-actions
+          ref: main
+          path: .hub-core-bump
+          sparse-checkout: |
+            scripts/bump_hub_core.py
+            templates/hub-core-bump-pr.md
+
+      - name: Bump hubBackendVersion
+        id: bump
+        run: python3 .hub-core-bump/scripts/bump_hub_core.py --version "$VERSION"
+        env:
+          VERSION: ${{ inputs.version }}
+
+      - name: Push bump branch
+        if: steps.bump.outputs.changed == 'true'
+        env:
+          VERSION: ${{ inputs.version }}
+          BRANCH: ${{ inputs.branch }}
+        run: |
+          set -euo pipefail
+          git config user.name githubZenoo
+          git config user.email github@zenoo.com
+          git checkout -b "$BRANCH"
+          git add build.gradle
+          git commit -m "chore(deps): bump hub core to ${VERSION}"
+          # Rolling branch: force-push so the single open PR always targets the newest
+          # released version rather than accumulating one stale PR per release.
+          git push --force origin "$BRANCH"
+
+      - name: Render PR body
+        if: steps.bump.outputs.changed == 'true'
+        env:
+          VERSION: ${{ inputs.version }}
+          PREVIOUS: ${{ steps.bump.outputs.previous }}
+        run: |
+          set -euo pipefail
+          # Rendered outside the working tree so it never shows up as an untracked
+          # file in the instance repo.
+          sed -e "s|{{VERSION}}|${VERSION}|g" \
+              -e "s|{{PREVIOUS}}|${PREVIOUS}|g" \
+              .hub-core-bump/templates/hub-core-bump-pr.md > "${RUNNER_TEMP}/pr-body.md"
+          cat "${RUNNER_TEMP}/pr-body.md"
+
+      - name: Open or update PR
+        if: steps.bump.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.actions-access-token }}
+          VERSION: ${{ inputs.version }}
+          BRANCH: ${{ inputs.branch }}
+          BASE: ${{ inputs.base }}
+        run: |
+          set -euo pipefail
+          TITLE="chore(deps): bump hub core to ${VERSION}"
+
+          EXISTING=$(gh pr list --head "$BRANCH" --base "$BASE" --state open --json number --jq '.[0].number // empty')
+          if [[ -n "$EXISTING" ]]; then
+            gh pr edit "$EXISTING" --title "$TITLE" --body-file "${RUNNER_TEMP}/pr-body.md"
+            echo "Updated PR #${EXISTING}"
+          else
+            gh pr create --base "$BASE" --head "$BRANCH" --title "$TITLE" --body-file "${RUNNER_TEMP}/pr-body.md"
+          fi
