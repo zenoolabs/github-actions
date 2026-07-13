@@ -114,11 +114,25 @@ jobs:
           path: ~/.gradle/dependency-check-data
 
       - name: 'Analyze dependencies'
+        # Step timeout must stay below the job timeout (60m). Building the NVD database
+        # from scratch can outlast the job, and a job-level cancellation kills the
+        # runner outright — the 'Save Dependency Check Cache' step below would never
+        # run, so the partial database would be lost and the next run would start cold
+        # again. Failing the step instead keeps the job alive long enough to save what
+        # was downloaded, so successive runs resume from a warmer database.
+        timeout-minutes: 45
         if: ${{ inputs.full-run == true }}
         run: ./gradlew dependencyCheckAnalyze
 
       - name: 'Save Dependency Check Cache'
-        if: ${{ inputs.full-run == true && inputs.enable-dependency-cache == true }}
+        # always(): the NVD database must be persisted even when 'Analyze dependencies'
+        # fails or is cancelled. Building it from scratch means paginating ~250k CVEs
+        # through a heavily throttled NVD API, which can exceed this job's timeout. With
+        # the default (success-only) condition the partial database is thrown away, so
+        # the next run starts cold again and hits the same timeout — the cache is never
+        # written and every run rebuilds from zero. Saving on failure lets successive
+        # runs resume from the partial database until it is complete.
+        if: ${{ always() && inputs.full-run == true && inputs.enable-dependency-cache == true }}
         uses: actions/cache/save@v4
         id: cache-save
         with:
