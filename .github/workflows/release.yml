@@ -39,12 +39,12 @@ on:
         type: string
         default: "ubuntu-latest"
       service_name:
-        description: "name of the service that's being released"
-        required: true
+        description: "name of the service that's being released (required when docker_image or dispatch_event is true)"
+        required: false
         type: string
       image_repo:
-        description: "URL of the image in the container registry"
-        required: true
+        description: "URL of the image in the container registry (required when docker_image or dispatch_event is true)"
+        required: false
         type: string
       deployment_repo:
         description: "repository where hub deployments are triggered from"
