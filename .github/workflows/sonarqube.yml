@@ -131,6 +131,19 @@ jobs:
         if: ${{ inputs.full-run == true }}
         run: ./gradlew dependencyCheckAnalyze
 
+      - name: 'Dependency-Check summary'
+        # Render the JSON report into a findings table on the run's job summary, so the
+        # results are visible without downloading and unzipping the HTML artifact. Runs
+        # even if analyze failed (always) so partial/timeout results still surface, and
+        # never fails the job itself. Requires the consumer's dependencyCheck block to
+        # emit JSON (formats includes 'JSON'); if it doesn't, the step notes that no
+        # JSON report was produced.
+        if: ${{ always() && inputs.full-run == true }}
+        run: |
+          curl -fsSL -o /tmp/dep_check_summary.py \
+            https://github.com/zenoolabs/github-actions/raw/main/scripts/dep_check_summary.py
+          python3 /tmp/dep_check_summary.py ./build/reports/dependency-check-report.json || true
+
       - name: 'Save Dependency Check Cache'
         # always(): the NVD database must be persisted even when 'Analyze dependencies'
         # fails or is cancelled. Building it from scratch means paginating ~250k CVEs
