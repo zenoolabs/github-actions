@@ -13,6 +13,9 @@ on:
         required: true
       nvd-api-key:
         required: false
+      nvd-datafeed-token:
+        description: 'Bearer token to read the private NVD datafeed mirror (zenoolabs/nvd-mirror) over raw.githubusercontent. Usually ACTIONS_ACCESS_TOKEN.'
+        required: false
       localstack-token:
         required: true
     inputs:
@@ -60,6 +63,10 @@ jobs:
       ORG_GRADLE_PROJECT_sonarqubeHostUrl: ${{ secrets.sonarqube-host }}
       ORG_GRADLE_PROJECT_sonarqubeLoginToken: ${{ secrets.sonarqube-token }}
       ORG_GRADLE_PROJECT_nvdApiKey: ${{ secrets.nvd-api-key }}
+      # Bearer token for the private NVD datafeed mirror; build.gradle wires it into
+      # nvd { datafeedBearerToken } so the cold NVD-API build is replaced by a fast
+      # download from zenoolabs/nvd-mirror. See NWO-945.
+      ORG_GRADLE_PROJECT_nvdDatafeedToken: ${{ secrets.nvd-datafeed-token }}
       ORG_GRADLE_PROJECT_parallelForks: ${{ inputs.parallel-forks }}
     steps:
       - name: 'Get current date'
