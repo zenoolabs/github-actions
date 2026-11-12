@@ -1,0 +1,122 @@
+name: "ECR image scan"
+
+# Re-scans an image in ECR against the current CVE feed. ECR Basic scanning runs
+# on push but does not automatically re-scan an existing image when a new CVE is
+# later disclosed, so a crucial image can gain a CRITICAL/HIGH finding with
+# nothing re-triggering a scan. A re-push would not help (identical content
+# dedupes to the same digest and triggers no scan), so this calls
+# start-image-scan on the existing image.
+#
+# Findings are alerted centrally by the ecr-scan-alerts rule in
+# hub-infra-security (Shared Services account) -> Slack + email. This workflow
+# only drives the scan. See JIRA NWO-1166.
+#
+# Caller example (daily, in an instance repo):
+#
+#   name: 'Daily ECR scan'
+#   on:
+#     schedule:
+#       - cron: '17 6 * * *'
+#     workflow_dispatch:
+#   jobs:
+#     scan:
+#       uses: zenoolabs/github-actions/.github/workflows/ecr-scan.yml@v28.3.0
+#       with:
+#         image: hub-instance-lseg
+#         tag: v9.91.0          # omit to scan the newest-pushed tag
+
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: "ECR repository name (not the full URI)."
+        required: true
+        type: string
+      tag:
+        description: "Image tag to scan. Omit to scan the newest-pushed tag."
+        required: false
+        type: string
+        default: ""
+      region:
+        description: "AWS region of the registry."
+        required: false
+        type: string
+        default: "eu-west-1"
+      runner:
+        description: "The runner to use."
+        required: false
+        type: string
+        default: "ubuntu-latest"
+
+jobs:
+  scan:
+    name: "Scan image"
+    runs-on: ${{ inputs.runner }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::323683957335:role/ecr-assume-role-github-actions
+          aws-region: ${{ inputs.region }}
+
+      - name: Scan image
+        env:
+          REPO: ${{ inputs.image }}
+          TAG: ${{ inputs.tag }}
+          REGION: ${{ inputs.region }}
+        run: |
+          set -euo pipefail
+
+          # Resolve the tag to scan: the input, or the first tag on the
+          # newest-pushed image. An image can carry several tags, so take one.
+          if [ -n "$TAG" ]; then
+            SCAN_TAG="$TAG"
+          else
+            SCAN_TAG=$(aws ecr describe-images \
+              --repository-name "$REPO" --region "$REGION" \
+              --query 'reverse(sort_by(imageDetails,&imagePushedAt))[0].imageTags' \
+              --output text | tr '\t' '\n' | head -n1)
+          fi
+          if [ -z "$SCAN_TAG" ] || [ "$SCAN_TAG" = "None" ]; then
+            echo "No tag to scan in $REPO." >&2
+            exit 1
+          fi
+          echo "Resolving $REPO:$SCAN_TAG"
+
+          # A multi-arch image is an OCI/Docker index that ECR cannot scan
+          # directly (UnsupportedImageTypeException); it scans the per-platform
+          # children. Resolve the tag to the digests to scan.
+          MEDIA_TYPE=$(aws ecr batch-get-image \
+            --repository-name "$REPO" --image-ids imageTag="$SCAN_TAG" --region "$REGION" \
+            --query 'images[0].imageManifestMediaType' --output text)
+
+          case "$MEDIA_TYPE" in
+            application/vnd.oci.image.index.v1+json|application/vnd.docker.distribution.manifest.list.v2+json)
+              DIGESTS=$(aws ecr batch-get-image \
+                --repository-name "$REPO" --image-ids imageTag="$SCAN_TAG" --region "$REGION" \
+                --query 'images[0].imageManifest' --output text \
+                | jq -r '.manifests[]
+                         | select(.platform.architecture != "unknown")
+                         | .digest')
+              ;;
+            *)
+              DIGESTS=$(aws ecr describe-images \
+                --repository-name "$REPO" --image-ids imageTag="$SCAN_TAG" --region "$REGION" \
+                --query 'imageDetails[0].imageDigest' --output text)
+              ;;
+          esac
+
+          # Basic allows one manual scan per image per 24h; a recent push may
+          # already have scanned it, returning LimitExceededException. That is
+          # not a failure: the image is scanned either way.
+          for d in $DIGESTS; do
+            echo "Scanning $REPO @ $d"
+            aws ecr start-image-scan \
+              --repository-name "$REPO" --image-id imageDigest="$d" --region "$REGION" \
+              >/dev/null 2>scan_err \
+              || grep -q 'LimitExceededException' scan_err \
+              || { cat scan_err >&2; exit 1; }
+          done
